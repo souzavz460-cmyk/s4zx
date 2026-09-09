@@ -1,43 +1,65 @@
 --[[
-    SOUZA PANEL V4
-    LocalScript
+    SOUZA PANEL - REBUILD
 
+    LocalScript:
     StarterPlayer
         > StarterPlayerScripts
             > LocalScript
 
-    INTERFACE:
-    Inspirada no layout enviado:
-    - Sidebar
-    - Tema dark/navy
-    - Accent laranja
-    - Cards
-    - Scroll
-    - Minimizar
-    - Círculo flutuante 100% arrastável
+    PRINCIPAL:
+    • Elevador
+    • DESCNY
+    • AntiLag
 
-    RECURSOS:
-    - Elevador
-    - DESCNY
-    - AntiLag
+    IMPORTANTE:
+    A bolinha flutuante foi refeita do zero para PC:
+    • Clique = abre
+    • Segura + move = arrasta
+    • Não abre ao terminar um arrasto
+    • Fica limitada dentro da tela
+
+    RightShift também abre/fecha o painel.
 ]]
 
 ------------------------------------------------------------
 -- SERVICES
 ------------------------------------------------------------
 
-local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-local UIS = game:GetService("UserInputService")
-local Lighting = game:GetService("Lighting")
+local Players =
+	game:GetService("Players")
+
+local TweenService =
+	game:GetService("TweenService")
+
+local RunService =
+	game:GetService("RunService")
+
+local UIS =
+	game:GetService("UserInputService")
+
+local Lighting =
+	game:GetService("Lighting")
 
 ------------------------------------------------------------
 -- PLAYER
 ------------------------------------------------------------
 
-local Player = Players.LocalPlayer
-local PlayerGui = Player:WaitForChild("PlayerGui")
+local Player =
+	Players.LocalPlayer
+
+local PlayerGui =
+	Player:WaitForChild("PlayerGui")
+
+------------------------------------------------------------
+-- CAMERA
+------------------------------------------------------------
+
+while not workspace.CurrentCamera do
+	task.wait()
+end
+
+local Camera =
+	workspace.CurrentCamera
 
 ------------------------------------------------------------
 -- CONFIG
@@ -45,13 +67,21 @@ local PlayerGui = Player:WaitForChild("PlayerGui")
 
 local CONFIG = {
 
-	-- Usando thumbnail porque costuma carregar melhor
-	-- quando rbxassetid não aparece.
 	Logo =
 		"rbxthumb://type=Asset&id=98880379063768&w=420&h=420",
 
 	--------------------------------------------------------
-	-- ELEVADOR
+	-- PANEL
+	--------------------------------------------------------
+
+	Width = 600,
+
+	Height = 390,
+
+	SidebarWidth = 148,
+
+	--------------------------------------------------------
+	-- PLATFORM
 	--------------------------------------------------------
 
 	PlatformSize =
@@ -61,247 +91,255 @@ local CONFIG = {
 			6.5
 		),
 
-	-- Nível 2 fica baixo.
-	StepHeight = 2.2,
+	-- nível 2 continua baixo
+	StepHeight = 2.15,
 
 	MaxLevel = 25,
 
 	MoveSpeed = 7.5,
-
-	--------------------------------------------------------
-	-- UI
-	--------------------------------------------------------
-
-	Width = 620,
-	Height = 410,
-
-	SidebarWidth = 155,
 }
+
+------------------------------------------------------------
+-- ADVANCED FONT
+------------------------------------------------------------
+
+local FONT_REGULAR =
+	Font.new(
+
+		"rbxasset://fonts/families/GothamSSm.json",
+
+		Enum.FontWeight.Regular,
+
+		Enum.FontStyle.Normal
+	)
+
+local FONT_MEDIUM =
+	Font.new(
+
+		"rbxasset://fonts/families/GothamSSm.json",
+
+		Enum.FontWeight.Medium,
+
+		Enum.FontStyle.Normal
+	)
+
+local FONT_BOLD =
+	Font.new(
+
+		"rbxasset://fonts/families/GothamSSm.json",
+
+		Enum.FontWeight.Bold,
+
+		Enum.FontStyle.Normal
+	)
 
 ------------------------------------------------------------
 -- COLORS
 ------------------------------------------------------------
 
-local C = {
+local COLOR = {
 
 	Background =
 		Color3.fromRGB(
-			3,
-			8,
-			14
+			7,
+			10,
+			16
+		),
+
+	Background2 =
+		Color3.fromRGB(
+			11,
+			15,
+			24
 		),
 
 	Sidebar =
 		Color3.fromRGB(
-			2,
-			7,
-			13
+			5,
+			8,
+			14
 		),
 
-	Top =
+	Sidebar2 =
 		Color3.fromRGB(
-			4,
-			10,
-			17
+			8,
+			12,
+			20
 		),
 
-	Row =
+	Card =
 		Color3.fromRGB(
-			17,
-			28,
-			40
-		),
-
-	RowHover =
-		Color3.fromRGB(
+			16,
 			22,
-			35,
-			49
+			32
 		),
 
-	Accent =
+	CardHover =
 		Color3.fromRGB(
-			255,
-			74,
+			21,
+			29,
+			42
+		),
+
+	Control =
+		Color3.fromRGB(
+			8,
+			14,
 			22
 		),
 
-	AccentHover =
+	Stroke =
 		Color3.fromRGB(
-			255,
-			98,
+			35,
+			45,
+			59
+		),
+
+	StrokeSoft =
+		Color3.fromRGB(
+			27,
+			35,
 			47
 		),
 
 	Text =
 		Color3.fromRGB(
-			238,
-			241,
-			246
+			245,
+			247,
+			250
 		),
 
-	SubText =
+	Text2 =
 		Color3.fromRGB(
-			155,
-			164,
-			177
+			159,
+			169,
+			184
 		),
 
-	Disabled =
+	Text3 =
 		Color3.fromRGB(
-			8,
-			17,
-			27
+			103,
+			114,
+			132
 		),
 
-	Track =
+	Accent =
 		Color3.fromRGB(
-			235,
-			239,
-			243
+			255,
+			77,
+			24
 		),
 
-	Stroke =
+	Accent2 =
 		Color3.fromRGB(
-			25,
-			38,
-			52
+			255,
+			110,
+			42
 		),
 
 	Green =
 		Color3.fromRGB(
-			80,
-			220,
-			150
+			77,
+			219,
+			144
 		),
 
 	Red =
 		Color3.fromRGB(
-			235,
-			73,
-			88
+			238,
+			78,
+			96
+		),
+
+	White =
+		Color3.fromRGB(
+			247,
+			249,
+			252
 		),
 }
 
 ------------------------------------------------------------
--- CLEANUP
+-- CLEAN OLD VERSION
 ------------------------------------------------------------
 
-local oldGui =
+local OldGui =
 	PlayerGui:FindFirstChild(
-		"SouzaAdvancedPanel"
+		"SouzaPremiumPanel"
 	)
 
-if oldGui then
-	oldGui:Destroy()
+if OldGui then
+	OldGui:Destroy()
 end
 
-local oldPlatform =
+local OldPlatform =
 	workspace:FindFirstChild(
-		"SouzaFollowPlatform_"
+		"SouzaPlatform_"
 		.. Player.UserId
 	)
 
-if oldPlatform then
-	oldPlatform:Destroy()
+if OldPlatform then
+	OldPlatform:Destroy()
 end
-
-------------------------------------------------------------
--- CHARACTER
-------------------------------------------------------------
-
-local Character
-local Humanoid
-local Root
-
-local function SetupCharacter(char)
-
-	Character = char
-
-	Humanoid =
-		char:WaitForChild(
-			"Humanoid"
-		)
-
-	Root =
-		char:WaitForChild(
-			"HumanoidRootPart"
-		)
-
-end
-
-if Player.Character then
-
-	SetupCharacter(
-		Player.Character
-	)
-
-end
-
-Player.CharacterAdded:Connect(
-	function(char)
-
-		task.wait(0.2)
-
-		SetupCharacter(char)
-
-	end
-)
 
 ------------------------------------------------------------
 -- HELPERS
 ------------------------------------------------------------
 
-local function Corner(
+local function AddCorner(
 	object,
 	radius
 )
 
-	local c =
-		Instance.new(
-			"UICorner"
-		)
+	local corner =
+		Instance.new("UICorner")
 
-	c.CornerRadius =
+	corner.CornerRadius =
 		UDim.new(
 			0,
 			radius
 		)
 
-	c.Parent = object
+	corner.Parent =
+		object
 
-	return c
+	return corner
+
 end
 
-local function Stroke(
+------------------------------------------------------------
+
+local function AddStroke(
 	object,
 	color,
 	thickness,
 	transparency
 )
 
-	local s =
-		Instance.new(
-			"UIStroke"
-		)
+	local stroke =
+		Instance.new("UIStroke")
 
-	s.Color =
-		color or C.Stroke
+	stroke.Color =
+		color or COLOR.Stroke
 
-	s.Thickness =
+	stroke.Thickness =
 		thickness or 1
 
-	s.Transparency =
+	stroke.Transparency =
 		transparency or 0
 
-	s.Parent = object
+	stroke.Parent =
+		object
 
-	return s
+	return stroke
+
 end
+
+------------------------------------------------------------
 
 local function Tween(
 	object,
-	time,
+	duration,
 	properties
 )
 
@@ -311,8 +349,10 @@ local function Tween(
 			object,
 
 			TweenInfo.new(
-				time,
+				duration,
+
 				Enum.EasingStyle.Quart,
+
 				Enum.EasingDirection.Out
 			),
 
@@ -322,10 +362,67 @@ local function Tween(
 	tween:Play()
 
 	return tween
+
 end
 
 ------------------------------------------------------------
--- PLATFORM
+-- CHARACTER
+------------------------------------------------------------
+
+local Character
+
+local Humanoid
+
+local Root
+
+------------------------------------------------------------
+
+local function SetupCharacter(
+	character
+)
+
+	Character =
+		character
+
+	Humanoid =
+		character:WaitForChild(
+			"Humanoid"
+		)
+
+	Root =
+		character:WaitForChild(
+			"HumanoidRootPart"
+		)
+
+end
+
+------------------------------------------------------------
+
+if Player.Character then
+
+	task.spawn(
+		SetupCharacter,
+		Player.Character
+	)
+
+end
+
+------------------------------------------------------------
+
+Player.CharacterAdded:Connect(
+	function(character)
+
+		task.wait(0.2)
+
+		SetupCharacter(
+			character
+		)
+
+	end
+)
+
+------------------------------------------------------------
+-- PLATFORM SYSTEM
 ------------------------------------------------------------
 
 local Platform = nil
@@ -339,7 +436,7 @@ local CurrentY = 0
 local TargetY = 0
 
 ------------------------------------------------------------
--- FEET POSITION
+-- FEET Y
 ------------------------------------------------------------
 
 local function GetFeetY()
@@ -377,16 +474,19 @@ local function CreatePlatform()
 	end
 
 	--------------------------------------------------------
-	-- Level 1 = exatamente debaixo do player.
+	-- BASE
 	--------------------------------------------------------
 
 	BaseY =
 		GetFeetY()
 		- CONFIG.PlatformSize.Y / 2
-		- 0.05
+		- 0.04
 
-	CurrentY = BaseY
-	TargetY = BaseY
+	CurrentY =
+		BaseY
+
+	TargetY =
+		BaseY
 
 	--------------------------------------------------------
 	-- PART
@@ -398,32 +498,39 @@ local function CreatePlatform()
 		)
 
 	Platform.Name =
-		"SouzaFollowPlatform_"
+		"SouzaPlatform_"
 		.. Player.UserId
 
 	Platform.Size =
 		CONFIG.PlatformSize
 
-	Platform.Anchored = true
+	Platform.Anchored =
+		true
 
-	Platform.CanCollide = true
-	Platform.CanTouch = true
-	Platform.CanQuery = true
+	Platform.CanCollide =
+		true
 
-	Platform.CastShadow = false
+	Platform.CanTouch =
+		true
+
+	Platform.CanQuery =
+		true
+
+	Platform.CastShadow =
+		false
 
 	Platform.Material =
 		Enum.Material.SmoothPlastic
 
 	Platform.Color =
 		Color3.fromRGB(
-			17,
-			21,
-			29
+			14,
+			18,
+			26
 		)
 
 	Platform.Transparency =
-		0.03
+		0.02
 
 	Platform.TopSurface =
 		Enum.SurfaceType.Smooth
@@ -433,8 +540,11 @@ local function CreatePlatform()
 
 	Platform.CFrame =
 		CFrame.new(
+
 			Root.Position.X,
+
 			BaseY,
+
 			Root.Position.Z
 		)
 
@@ -442,139 +552,193 @@ local function CreatePlatform()
 		workspace
 
 	--------------------------------------------------------
-	-- SURFACE GUI
+	-- PLATFORM GUI
 	--------------------------------------------------------
 
-	local surface =
+	local Surface =
 		Instance.new(
 			"SurfaceGui"
 		)
 
-	surface.Face =
+	Surface.Face =
 		Enum.NormalId.Top
 
-	surface.SizingMode =
+	Surface.SizingMode =
 		Enum.SurfaceGuiSizingMode.PixelsPerStud
 
-	surface.PixelsPerStud = 45
+	Surface.PixelsPerStud =
+		50
 
-	surface.LightInfluence = 0
+	Surface.LightInfluence =
+		0
 
-	surface.Parent =
+	Surface.Parent =
 		Platform
 
 	--------------------------------------------------------
 
-	local background =
+	local BG =
 		Instance.new(
 			"Frame"
 		)
 
-	background.Size =
+	BG.Size =
 		UDim2.fromScale(
 			1,
 			1
 		)
 
-	background.BackgroundColor3 =
+	BG.BackgroundColor3 =
 		Color3.fromRGB(
 			10,
 			13,
 			20
 		)
 
-	background.BorderSizePixel = 0
+	BG.BorderSizePixel =
+		0
 
-	background.Parent =
-		surface
+	BG.Parent =
+		Surface
 
 	--------------------------------------------------------
-	-- ORANGE BORDER
+
+	local Gradient =
+		Instance.new(
+			"UIGradient"
+		)
+
+	Gradient.Rotation =
+		45
+
+	Gradient.Color =
+		ColorSequence.new({
+
+			ColorSequenceKeypoint.new(
+				0,
+				Color3.fromRGB(
+					30,
+					22,
+					20
+				)
+			),
+
+			ColorSequenceKeypoint.new(
+				0.5,
+				Color3.fromRGB(
+					12,
+					16,
+					24
+				)
+			),
+
+			ColorSequenceKeypoint.new(
+				1,
+				Color3.fromRGB(
+					22,
+					14,
+					13
+				)
+			),
+
+		})
+
+	Gradient.Parent =
+		BG
+
 	--------------------------------------------------------
 
-	local border =
+	local PlatformStroke =
 		Instance.new(
 			"UIStroke"
 		)
 
-	border.Color =
-		C.Accent
+	PlatformStroke.Color =
+		COLOR.Accent
 
-	border.Thickness = 3
+	PlatformStroke.Thickness =
+		3
 
-	border.Parent =
-		background
+	PlatformStroke.Transparency =
+		0.1
+
+	PlatformStroke.Parent =
+		BG
 
 	--------------------------------------------------------
-	-- BACKUP S
+	-- FALLBACK
 	--------------------------------------------------------
 
-	local backup =
+	local Letter =
 		Instance.new(
 			"TextLabel"
 		)
 
-	backup.Size =
+	Letter.Size =
 		UDim2.fromScale(
 			1,
 			1
 		)
 
-	backup.BackgroundTransparency = 1
+	Letter.BackgroundTransparency =
+		1
 
-	backup.Text = "S"
+	Letter.Text =
+		"S"
 
-	backup.TextColor3 =
-		C.Accent
+	Letter.TextColor3 =
+		COLOR.Accent
 
-	backup.TextTransparency =
-		0.65
+	Letter.TextTransparency =
+		0.7
 
-	backup.Font =
-		Enum.Font.GothamBlack
+	Letter.TextScaled =
+		true
 
-	backup.TextScaled = true
+	Letter.FontFace =
+		FONT_BOLD
 
-	backup.Parent =
-		background
+	Letter.Parent =
+		BG
 
 	--------------------------------------------------------
 	-- LOGO
 	--------------------------------------------------------
 
-	local logo =
+	local Logo =
 		Instance.new(
 			"ImageLabel"
 		)
 
-	logo.AnchorPoint =
+	Logo.AnchorPoint =
 		Vector2.new(
 			0.5,
 			0.5
 		)
 
-	logo.Position =
+	Logo.Position =
 		UDim2.fromScale(
 			0.5,
 			0.5
 		)
 
-	logo.Size =
+	Logo.Size =
 		UDim2.fromScale(
 			0.58,
 			0.58
 		)
 
-	logo.BackgroundTransparency = 1
+	Logo.BackgroundTransparency =
+		1
 
-	logo.Image =
+	Logo.Image =
 		CONFIG.Logo
 
-	logo.ScaleType =
+	Logo.ScaleType =
 		Enum.ScaleType.Fit
 
-	logo.Parent =
-		background
+	Logo.Parent =
+		BG
 
 end
 
@@ -597,7 +761,7 @@ local function RemovePlatform()
 end
 
 ------------------------------------------------------------
--- PLATFORM LOOP
+-- PLATFORM FOLLOW
 ------------------------------------------------------------
 
 RunService.Heartbeat:Connect(
@@ -627,10 +791,6 @@ RunService.Heartbeat:Connect(
 
 		end
 
-		----------------------------------------------------
-		-- VERTICAL SMOOTH
-		----------------------------------------------------
-
 		local alpha =
 			1
 			- math.exp(
@@ -646,10 +806,6 @@ RunService.Heartbeat:Connect(
 			)
 			* alpha
 
-		----------------------------------------------------
-		-- FOLLOW PLAYER
-		----------------------------------------------------
-
 		Platform.CFrame =
 			CFrame.new(
 
@@ -658,285 +814,50 @@ RunService.Heartbeat:Connect(
 				CurrentY,
 
 				Root.Position.Z
-
 			)
 
 	end
 )
 
 ------------------------------------------------------------
--- ANTI LAG
+-- DESCNY SYSTEM
 ------------------------------------------------------------
 
-local AntiLagEnabled = false
-
-local AntiLagCache = {}
-
-local function SaveProperty(
-	object,
-	property
-)
-
-	if not AntiLagCache[object] then
-
-		AntiLagCache[object] = {}
-
-	end
-
-	if AntiLagCache[object][property]
-		~= nil
-	then
-
-		return
-
-	end
-
-	local success, value =
-		pcall(
-			function()
-
-				return object[property]
-
-			end
-		)
-
-	if success then
-
-		AntiLagCache[object][property] =
-			value
-
-	end
-
-end
-
-local function SetCached(
-	object,
-	property,
-	value
-)
-
-	SaveProperty(
-		object,
-		property
-	)
-
-	pcall(
-		function()
-
-			object[property] =
-				value
-
-		end
-	)
-
-end
-
-local function OptimizeObject(
-	object
-)
-
-	if
-		object:IsA(
-			"ParticleEmitter"
-		)
-		or object:IsA(
-			"Trail"
-		)
-		or object:IsA(
-			"Beam"
-		)
-		or object:IsA(
-			"Smoke"
-		)
-		or object:IsA(
-			"Fire"
-		)
-		or object:IsA(
-			"Sparkles"
-		)
-	then
-
-		SetCached(
-			object,
-			"Enabled",
-			false
-		)
-
-	elseif
-		object:IsA(
-			"BloomEffect"
-		)
-		or object:IsA(
-			"BlurEffect"
-		)
-		or object:IsA(
-			"SunRaysEffect"
-		)
-		or object:IsA(
-			"DepthOfFieldEffect"
-		)
-	then
-
-		SetCached(
-			object,
-			"Enabled",
-			false
-		)
-
-	elseif object:IsA(
-		"BasePart"
-	) then
-
-		SetCached(
-			object,
-			"CastShadow",
-			false
-		)
-
-	end
-
-end
-
-local function EnableAntiLag()
-
-	if AntiLagEnabled then
-		return
-	end
-
-	AntiLagEnabled = true
-
-	SetCached(
-		Lighting,
-		"GlobalShadows",
-		false
-	)
-
-	task.spawn(
-		function()
-
-			local descendants =
-				workspace:GetDescendants()
-
-			for index, object
-				in ipairs(
-					descendants
-				)
-			do
-
-				if not AntiLagEnabled then
-					break
-				end
-
-				OptimizeObject(
-					object
-				)
-
-				if index % 250 == 0 then
-
-					RunService.Heartbeat:Wait()
-
-				end
-
-			end
-
-			for _, object
-				in ipairs(
-					Lighting:GetDescendants()
-				)
-			do
-
-				OptimizeObject(
-					object
-				)
-
-			end
-
-		end
-	)
-
-end
-
-local function DisableAntiLag()
-
-	AntiLagEnabled = false
-
-	for object, properties
-		in pairs(
-			AntiLagCache
-		)
-	do
-
-		if object
-			and object.Parent
-		then
-
-			for property, value
-				in pairs(
-					properties
-				)
-			do
-
-				pcall(
-					function()
-
-						object[property] =
-							value
-
-					end
-				)
-
-			end
-
-		end
-
-	end
-
-	AntiLagCache = {}
-
-end
-
-workspace.DescendantAdded:Connect(
-	function(object)
-
-		if AntiLagEnabled then
-
-			task.defer(
-				OptimizeObject,
-				object
-			)
-
-		end
-
-	end
-)
-
-------------------------------------------------------------
--- DESCNY
-------------------------------------------------------------
-
-local InvisNames = {
+local InvisKeywords = {
 
 	"invis",
+
 	"invisible",
+
 	"invisibility",
+
 	"cloak",
+
 	"capa",
+
 	"descny",
-	"vanish",
+
 	"ghost",
 
+	"vanish",
 }
+
+------------------------------------------------------------
 
 local function IsInvisibilityTool(
 	object
 )
 
-	if not object:IsA("Tool") then
+	if not object:IsA(
+		"Tool"
+	) then
+
 		return false
+
 	end
 
 	if object:GetAttribute(
-		"Invisible"
+		"Invisibility"
 	) == true then
 
 		return true
@@ -944,7 +865,7 @@ local function IsInvisibilityTool(
 	end
 
 	if object:GetAttribute(
-		"Invisibility"
+		"Invisible"
 	) == true then
 
 		return true
@@ -959,23 +880,27 @@ local function IsInvisibilityTool(
 
 	end
 
-	local name =
+	local Search =
 		string.lower(
+
 			object.Name
 			.. " "
 			.. object.ToolTip
 		)
 
-	for _, word
+	for _, keyword
 		in ipairs(
-			InvisNames
+			InvisKeywords
 		)
 	do
 
 		if string.find(
-			name,
-			word,
+			Search,
+
+			keyword,
+
 			1,
+
 			true
 		) then
 
@@ -986,13 +911,12 @@ local function IsInvisibilityTool(
 	end
 
 	return false
+
 end
 
-local function FindInvisibilityTool()
+------------------------------------------------------------
 
-	--------------------------------------------------------
-	-- CHARACTER
-	--------------------------------------------------------
+local function FindInvisibilityTool()
 
 	if Character then
 
@@ -1014,8 +938,6 @@ local function FindInvisibilityTool()
 
 	end
 
-	--------------------------------------------------------
-	-- BACKPACK
 	--------------------------------------------------------
 
 	local Backpack =
@@ -1044,63 +966,364 @@ local function FindInvisibilityTool()
 	end
 
 	return nil
+
 end
+
+------------------------------------------------------------
 
 local function ActivateDescny()
 
 	if not Humanoid then
 
 		return false,
-			"Personagem não encontrado"
+			"Personagem indisponível"
 
 	end
 
-	local tool =
+	local Tool =
 		FindInvisibilityTool()
 
-	if not tool then
+	if not Tool then
 
 		return false,
 			"Item não encontrado"
 
 	end
 
-	if tool.Parent ~= Character then
+	--------------------------------------------------------
+	-- EQUIP
+	--------------------------------------------------------
+
+	if Tool.Parent
+		~= Character
+	then
 
 		pcall(
 			function()
 
 				Humanoid:EquipTool(
-					tool
+					Tool
 				)
 
 			end
 		)
 
-		task.wait(0.1)
+		task.wait(
+			0.12
+		)
 
 	end
 
-	local success =
+	--------------------------------------------------------
+	-- ACTIVATE
+	--------------------------------------------------------
+
+	local Success =
 		pcall(
 			function()
 
-				tool:Activate()
+				Tool:Activate()
 
 			end
 		)
 
-	if success then
+	if Success then
 
 		return true,
-			tool.Name
+			Tool.Name
 
 	end
 
 	return false,
-		"Não foi possível ativar"
+		"Falha ao ativar"
 
 end
+
+------------------------------------------------------------
+-- ANTI LAG
+------------------------------------------------------------
+
+local AntiLagEnabled =
+	false
+
+local AntiLagCache =
+	{}
+
+------------------------------------------------------------
+
+local function SaveProperty(
+	object,
+	property
+)
+
+	if not AntiLagCache[
+		object
+	] then
+
+		AntiLagCache[
+			object
+		] = {}
+
+	end
+
+	if AntiLagCache[
+		object
+	][property] ~= nil
+	then
+
+		return
+
+	end
+
+	local Success,
+		Value =
+		pcall(
+			function()
+
+				return object[
+					property
+				]
+
+			end
+		)
+
+	if Success then
+
+		AntiLagCache[
+			object
+		][property] =
+			Value
+
+	end
+
+end
+
+------------------------------------------------------------
+
+local function SetCached(
+	object,
+	property,
+	value
+)
+
+	SaveProperty(
+		object,
+		property
+	)
+
+	pcall(
+		function()
+
+			object[property] =
+				value
+
+		end
+	)
+
+end
+
+------------------------------------------------------------
+
+local function OptimizeObject(
+	object
+)
+
+	if
+		object:IsA(
+			"ParticleEmitter"
+		)
+		or
+		object:IsA(
+			"Trail"
+		)
+		or
+		object:IsA(
+			"Beam"
+		)
+		or
+		object:IsA(
+			"Smoke"
+		)
+		or
+		object:IsA(
+			"Fire"
+		)
+		or
+		object:IsA(
+			"Sparkles"
+		)
+	then
+
+		SetCached(
+			object,
+			"Enabled",
+			false
+		)
+
+	elseif
+		object:IsA(
+			"BloomEffect"
+		)
+		or
+		object:IsA(
+			"BlurEffect"
+		)
+		or
+		object:IsA(
+			"SunRaysEffect"
+		)
+		or
+		object:IsA(
+			"DepthOfFieldEffect"
+		)
+	then
+
+		SetCached(
+			object,
+			"Enabled",
+			false
+		)
+
+	elseif object:IsA(
+		"BasePart"
+	) then
+
+		SetCached(
+			object,
+			"CastShadow",
+			false
+		)
+
+	end
+
+end
+
+------------------------------------------------------------
+
+local function EnableAntiLag()
+
+	if AntiLagEnabled then
+		return
+	end
+
+	AntiLagEnabled =
+		true
+
+	SetCached(
+		Lighting,
+		"GlobalShadows",
+		false
+	)
+
+	task.spawn(
+		function()
+
+			local Objects =
+				workspace:GetDescendants()
+
+			for index,
+				object
+				in ipairs(
+					Objects
+				)
+			do
+
+				if not AntiLagEnabled then
+					break
+				end
+
+				OptimizeObject(
+					object
+				)
+
+				if index % 250
+					== 0
+				then
+
+					RunService.Heartbeat:Wait()
+
+				end
+
+			end
+
+			for _, effect
+				in ipairs(
+					Lighting:GetDescendants()
+				)
+			do
+
+				OptimizeObject(
+					effect
+				)
+
+			end
+
+		end
+	)
+
+end
+
+------------------------------------------------------------
+
+local function DisableAntiLag()
+
+	AntiLagEnabled =
+		false
+
+	for object,
+		properties
+		in pairs(
+			AntiLagCache
+		)
+	do
+
+		if object
+			and object.Parent
+		then
+
+			for property,
+				value
+				in pairs(
+					properties
+				)
+			do
+
+				pcall(
+					function()
+
+						object[
+							property
+						] = value
+
+					end
+				)
+
+			end
+
+		end
+
+	end
+
+	AntiLagCache = {}
+
+end
+
+------------------------------------------------------------
+
+workspace.DescendantAdded:Connect(
+	function(object)
+
+		if AntiLagEnabled then
+
+			task.defer(
+				OptimizeObject,
+				object
+			)
+
+		end
+
+	end
+)
 
 ------------------------------------------------------------
 -- GUI
@@ -1112,17 +1335,93 @@ local GUI =
 	)
 
 GUI.Name =
-	"SouzaAdvancedPanel"
+	"SouzaPremiumPanel"
 
-GUI.ResetOnSpawn = false
+GUI.ResetOnSpawn =
+	false
 
-GUI.IgnoreGuiInset = true
+GUI.IgnoreGuiInset =
+	true
 
 GUI.ZIndexBehavior =
 	Enum.ZIndexBehavior.Sibling
 
 GUI.Parent =
 	PlayerGui
+
+------------------------------------------------------------
+-- SCREEN POSITION
+------------------------------------------------------------
+
+local Viewport =
+	Camera.ViewportSize
+
+local StartX =
+	math.floor(
+		(
+			Viewport.X
+			- CONFIG.Width
+		)
+		/ 2
+	)
+
+local StartY =
+	math.floor(
+		(
+			Viewport.Y
+			- CONFIG.Height
+		)
+		/ 2
+	)
+
+------------------------------------------------------------
+-- SHADOW
+------------------------------------------------------------
+
+local Shadow =
+	Instance.new(
+		"Frame"
+	)
+
+Shadow.Position =
+	UDim2.fromOffset(
+
+		StartX + 9,
+
+		StartY + 11
+	)
+
+Shadow.Size =
+	UDim2.fromOffset(
+
+		CONFIG.Width,
+
+		CONFIG.Height
+	)
+
+Shadow.BackgroundColor3 =
+	Color3.fromRGB(
+		0,
+		0,
+		0
+	)
+
+Shadow.BackgroundTransparency =
+	0.45
+
+Shadow.BorderSizePixel =
+	0
+
+Shadow.ZIndex =
+	0
+
+Shadow.Parent =
+	GUI
+
+AddCorner(
+	Shadow,
+	12
+)
 
 ------------------------------------------------------------
 -- MAIN
@@ -1133,62 +1432,107 @@ local Main =
 		"Frame"
 	)
 
-Main.Name = "Main"
-
-Main.AnchorPoint =
-	Vector2.new(
-		0.5,
-		0.5
-	)
+Main.Name =
+	"Main"
 
 Main.Position =
-	UDim2.fromScale(
-		0.5,
-		0.5
+	UDim2.fromOffset(
+
+		StartX,
+
+		StartY
 	)
 
 Main.Size =
 	UDim2.fromOffset(
+
 		CONFIG.Width,
+
 		CONFIG.Height
 	)
 
 Main.BackgroundColor3 =
-	C.Background
+	COLOR.Background
 
-Main.BorderSizePixel = 0
-
-Main.ClipsDescendants = true
-
-Main.Active = true
-
-Main.Parent = GUI
-
-Corner(Main, 6)
-
-Stroke(
-	Main,
-	Color3.fromRGB(
-		8,
-		13,
-		20
-	),
-	1,
+Main.BorderSizePixel =
 	0
+
+Main.ClipsDescendants =
+	true
+
+Main.Active =
+	true
+
+Main.ZIndex =
+	2
+
+Main.Parent =
+	GUI
+
+AddCorner(
+	Main,
+	12
+)
+
+AddStroke(
+
+	Main,
+
+	COLOR.Stroke,
+
+	1,
+
+	0.05
 )
 
 ------------------------------------------------------------
--- SCALE
+-- MAIN BACKGROUND GRADIENT
 ------------------------------------------------------------
 
-local MainScale =
+local MainGradient =
 	Instance.new(
-		"UIScale"
+		"UIGradient"
 	)
 
-MainScale.Scale = 1
+MainGradient.Rotation =
+	125
 
-MainScale.Parent =
+MainGradient.Color =
+	ColorSequence.new({
+
+		ColorSequenceKeypoint.new(
+			0,
+
+			Color3.fromRGB(
+				14,
+				20,
+				31
+			)
+		),
+
+		ColorSequenceKeypoint.new(
+			0.45,
+
+			Color3.fromRGB(
+				8,
+				12,
+				20
+			)
+		),
+
+		ColorSequenceKeypoint.new(
+			1,
+
+			Color3.fromRGB(
+				15,
+				10,
+				13
+			)
+		),
+
+	})
+
+MainGradient.Parent =
 	Main
 
 ------------------------------------------------------------
@@ -1202,192 +1546,563 @@ local Sidebar =
 
 Sidebar.Size =
 	UDim2.new(
+
 		0,
+
 		CONFIG.SidebarWidth,
+
 		1,
+
 		0
 	)
 
 Sidebar.BackgroundColor3 =
-	C.Sidebar
+	COLOR.Sidebar
 
-Sidebar.BorderSizePixel = 0
+Sidebar.BackgroundTransparency =
+	0.06
+
+Sidebar.BorderSizePixel =
+	0
+
+Sidebar.ZIndex =
+	3
 
 Sidebar.Parent =
 	Main
 
 ------------------------------------------------------------
--- SIDE LOGO HOLDER
+-- SIDEBAR GRADIENT
 ------------------------------------------------------------
 
-local SideLogoHolder =
+local SidebarGradient =
+	Instance.new(
+		"UIGradient"
+	)
+
+SidebarGradient.Rotation =
+	90
+
+SidebarGradient.Color =
+	ColorSequence.new({
+
+		ColorSequenceKeypoint.new(
+			0,
+
+			Color3.fromRGB(
+				8,
+				13,
+				22
+			)
+		),
+
+		ColorSequenceKeypoint.new(
+			1,
+
+			Color3.fromRGB(
+				4,
+				7,
+				12
+			)
+		),
+
+	})
+
+SidebarGradient.Parent =
+	Sidebar
+
+------------------------------------------------------------
+-- SIDEBAR DIVIDER
+------------------------------------------------------------
+
+local SideDivider =
 	Instance.new(
 		"Frame"
 	)
 
-SideLogoHolder.AnchorPoint =
+SideDivider.AnchorPoint =
+	Vector2.new(
+		1,
+		0
+	)
+
+SideDivider.Position =
+	UDim2.new(
+		1,
+		0,
+		0,
+		0
+	)
+
+SideDivider.Size =
+	UDim2.new(
+		0,
+		1,
+		1,
+		0
+	)
+
+SideDivider.BackgroundColor3 =
+	COLOR.StrokeSoft
+
+SideDivider.BorderSizePixel =
+	0
+
+SideDivider.Parent =
+	Sidebar
+
+------------------------------------------------------------
+-- BRAND LOGO HOLDER
+------------------------------------------------------------
+
+local BrandHolder =
+	Instance.new(
+		"Frame"
+	)
+
+BrandHolder.AnchorPoint =
 	Vector2.new(
 		0.5,
 		0
 	)
 
-SideLogoHolder.Position =
+BrandHolder.Position =
 	UDim2.new(
 		0.5,
 		0,
 		0,
-		18
+		23
 	)
 
-SideLogoHolder.Size =
+BrandHolder.Size =
 	UDim2.fromOffset(
-		58,
-		58
+		56,
+		56
 	)
 
-SideLogoHolder.BackgroundColor3 =
+BrandHolder.BackgroundColor3 =
 	Color3.fromRGB(
-		22,
-		27,
-		35
+		16,
+		21,
+		30
 	)
 
-SideLogoHolder.BorderSizePixel = 0
+BrandHolder.BorderSizePixel =
+	0
 
-SideLogoHolder.Parent =
+BrandHolder.ZIndex =
+	5
+
+BrandHolder.Parent =
 	Sidebar
 
-Corner(
-	SideLogoHolder,
-	29
+AddCorner(
+	BrandHolder,
+	28
 )
 
-Stroke(
-	SideLogoHolder,
-	C.Accent,
-	2,
-	0.3
+AddStroke(
+
+	BrandHolder,
+
+	COLOR.Accent,
+
+	1.5,
+
+	0.15
 )
 
 ------------------------------------------------------------
--- S BACKUP
+-- FALLBACK S
 ------------------------------------------------------------
 
-local SideBackup =
+local BrandFallback =
 	Instance.new(
 		"TextLabel"
 	)
 
-SideBackup.Size =
+BrandFallback.Size =
 	UDim2.fromScale(
 		1,
 		1
 	)
 
-SideBackup.BackgroundTransparency = 1
+BrandFallback.BackgroundTransparency =
+	1
 
-SideBackup.Text = "S"
+BrandFallback.Text =
+	"S"
 
-SideBackup.TextColor3 =
-	C.Accent
+BrandFallback.TextColor3 =
+	COLOR.Accent
 
-SideBackup.TextSize = 27
+BrandFallback.TextSize =
+	27
 
-SideBackup.Font =
-	Enum.Font.GothamBlack
+BrandFallback.FontFace =
+	FONT_BOLD
 
-SideBackup.Parent =
-	SideLogoHolder
+BrandFallback.ZIndex =
+	6
+
+BrandFallback.Parent =
+	BrandHolder
 
 ------------------------------------------------------------
--- SIDE LOGO
+-- BRAND LOGO
 ------------------------------------------------------------
 
-local SideLogo =
+local BrandLogo =
 	Instance.new(
 		"ImageLabel"
 	)
 
-SideLogo.AnchorPoint =
+BrandLogo.AnchorPoint =
 	Vector2.new(
 		0.5,
 		0.5
 	)
 
-SideLogo.Position =
+BrandLogo.Position =
 	UDim2.fromScale(
 		0.5,
 		0.5
 	)
 
-SideLogo.Size =
+BrandLogo.Size =
 	UDim2.fromOffset(
-		50,
+		48,
+		48
+	)
+
+BrandLogo.BackgroundTransparency =
+	1
+
+BrandLogo.Image =
+	CONFIG.Logo
+
+BrandLogo.ScaleType =
+	Enum.ScaleType.Fit
+
+BrandLogo.ZIndex =
+	7
+
+BrandLogo.Parent =
+	BrandHolder
+
+------------------------------------------------------------
+-- BRAND NAME
+------------------------------------------------------------
+
+local BrandName =
+	Instance.new(
+		"TextLabel"
+	)
+
+BrandName.Position =
+	UDim2.fromOffset(
+		0,
+		89
+	)
+
+BrandName.Size =
+	UDim2.new(
+		1,
+		0,
+		0,
+		20
+	)
+
+BrandName.BackgroundTransparency =
+	1
+
+BrandName.Text =
+	"SOUZA"
+
+BrandName.TextColor3 =
+	COLOR.Text
+
+BrandName.TextSize =
+	13
+
+BrandName.FontFace =
+	FONT_BOLD
+
+BrandName.ZIndex =
+	5
+
+BrandName.Parent =
+	Sidebar
+
+------------------------------------------------------------
+-- BRAND SUB
+------------------------------------------------------------
+
+local BrandSub =
+	Instance.new(
+		"TextLabel"
+	)
+
+BrandSub.Position =
+	UDim2.fromOffset(
+		0,
+		108
+	)
+
+BrandSub.Size =
+	UDim2.new(
+		1,
+		0,
+		0,
+		15
+	)
+
+BrandSub.BackgroundTransparency =
+	1
+
+BrandSub.Text =
+	"UTILITY"
+
+BrandSub.TextColor3 =
+	COLOR.Text3
+
+BrandSub.TextSize =
+	9
+
+BrandSub.FontFace =
+	FONT_MEDIUM
+
+BrandSub.ZIndex =
+	5
+
+BrandSub.Parent =
+	Sidebar
+
+------------------------------------------------------------
+-- PRINCIPAL NAV
+------------------------------------------------------------
+
+local PrincipalButton =
+	Instance.new(
+		"TextButton"
+	)
+
+PrincipalButton.Position =
+	UDim2.fromOffset(
+		13,
+		153
+	)
+
+PrincipalButton.Size =
+	UDim2.new(
+		1,
+		-26,
+		0,
 		50
 	)
 
-SideLogo.BackgroundTransparency = 1
+PrincipalButton.BackgroundColor3 =
+	Color3.fromRGB(
+		22,
+		25,
+		32
+	)
 
-SideLogo.Image =
-	CONFIG.Logo
+PrincipalButton.BackgroundTransparency =
+	0.05
 
-SideLogo.ScaleType =
-	Enum.ScaleType.Fit
+PrincipalButton.BorderSizePixel =
+	0
 
-SideLogo.Parent =
-	SideLogoHolder
+PrincipalButton.Text =
+	""
+
+PrincipalButton.AutoButtonColor =
+	false
+
+PrincipalButton.ZIndex =
+	5
+
+PrincipalButton.Parent =
+	Sidebar
+
+AddCorner(
+	PrincipalButton,
+	10
+)
 
 ------------------------------------------------------------
--- NAV HOLDER
+-- ACCENT BAR
 ------------------------------------------------------------
 
-local Nav =
+local PrincipalAccent =
 	Instance.new(
 		"Frame"
 	)
 
-Nav.Position =
+PrincipalAccent.Position =
 	UDim2.fromOffset(
-		10,
-		100
+		0,
+		8
 	)
 
-Nav.Size =
+PrincipalAccent.Size =
+	UDim2.fromOffset(
+		3,
+		34
+	)
+
+PrincipalAccent.BackgroundColor3 =
+	COLOR.Accent
+
+PrincipalAccent.BorderSizePixel =
+	0
+
+PrincipalAccent.Parent =
+	PrincipalButton
+
+AddCorner(
+	PrincipalAccent,
+	2
+)
+
+------------------------------------------------------------
+-- NAV ICON
+------------------------------------------------------------
+
+local PrincipalIcon =
+	Instance.new(
+		"TextLabel"
+	)
+
+PrincipalIcon.Position =
+	UDim2.fromOffset(
+		17,
+		0
+	)
+
+PrincipalIcon.Size =
+	UDim2.fromOffset(
+		28,
+		50
+	)
+
+PrincipalIcon.BackgroundTransparency =
+	1
+
+PrincipalIcon.Text =
+	"◈"
+
+PrincipalIcon.TextColor3 =
+	COLOR.Accent
+
+PrincipalIcon.TextSize =
+	20
+
+PrincipalIcon.FontFace =
+	FONT_BOLD
+
+PrincipalIcon.Parent =
+	PrincipalButton
+
+------------------------------------------------------------
+-- NAV TEXT
+------------------------------------------------------------
+
+local PrincipalText =
+	Instance.new(
+		"TextLabel"
+	)
+
+PrincipalText.Position =
+	UDim2.fromOffset(
+		48,
+		0
+	)
+
+PrincipalText.Size =
+	UDim2.new(
+		1,
+		-52,
+		1,
+		0
+	)
+
+PrincipalText.BackgroundTransparency =
+	1
+
+PrincipalText.Text =
+	"Principal"
+
+PrincipalText.TextColor3 =
+	COLOR.Text
+
+PrincipalText.TextSize =
+	13
+
+PrincipalText.FontFace =
+	FONT_MEDIUM
+
+PrincipalText.TextXAlignment =
+	Enum.TextXAlignment.Left
+
+PrincipalText.Parent =
+	PrincipalButton
+
+------------------------------------------------------------
+-- SIDEBAR BOTTOM INFO
+------------------------------------------------------------
+
+local KeyInfo =
+	Instance.new(
+		"TextLabel"
+	)
+
+KeyInfo.AnchorPoint =
+	Vector2.new(
+		0.5,
+		1
+	)
+
+KeyInfo.Position =
+	UDim2.new(
+		0.5,
+		0,
+		1,
+		-17
+	)
+
+KeyInfo.Size =
 	UDim2.new(
 		1,
 		-20,
-		1,
-		-110
+		0,
+		40
 	)
 
-Nav.BackgroundTransparency = 1
+KeyInfo.BackgroundTransparency =
+	1
 
-Nav.Parent =
+KeyInfo.Text =
+	"RIGHT SHIFT\nABRIR / FECHAR"
+
+KeyInfo.TextColor3 =
+	COLOR.Text3
+
+KeyInfo.TextSize =
+	8
+
+KeyInfo.FontFace =
+	FONT_MEDIUM
+
+KeyInfo.TextWrapped =
+	true
+
+KeyInfo.Parent =
 	Sidebar
 
 ------------------------------------------------------------
--- NAV LAYOUT
-------------------------------------------------------------
-
-local NavLayout =
-	Instance.new(
-		"UIListLayout"
-	)
-
-NavLayout.Padding =
-	UDim.new(
-		0,
-		7
-	)
-
-NavLayout.SortOrder =
-	Enum.SortOrder.LayoutOrder
-
-NavLayout.Parent =
-	Nav
-
-------------------------------------------------------------
--- CONTENT AREA
+-- CONTENT
 ------------------------------------------------------------
 
 local Content =
@@ -1397,30 +2112,39 @@ local Content =
 
 Content.Position =
 	UDim2.new(
+
 		0,
+
 		CONFIG.SidebarWidth,
+
 		0,
+
 		0
 	)
 
 Content.Size =
 	UDim2.new(
+
 		1,
+
 		-CONFIG.SidebarWidth,
+
 		1,
+
 		0
 	)
 
-Content.BackgroundColor3 =
-	C.Background
+Content.BackgroundTransparency =
+	1
 
-Content.BorderSizePixel = 0
+Content.ZIndex =
+	3
 
 Content.Parent =
 	Main
 
 ------------------------------------------------------------
--- HEADER
+-- HEADER / DRAG AREA
 ------------------------------------------------------------
 
 local Header =
@@ -1428,53 +2152,69 @@ local Header =
 		"Frame"
 	)
 
+Header.Name =
+	"DragArea"
+
 Header.Size =
 	UDim2.new(
 		1,
 		0,
 		0,
-		72
+		76
 	)
 
-Header.BackgroundTransparency = 1
+Header.BackgroundTransparency =
+	1
+
+Header.Active =
+	true
+
+Header.ZIndex =
+	4
 
 Header.Parent =
 	Content
 
 ------------------------------------------------------------
--- HEADER ICON
+-- HEADER SMALL TEXT
 ------------------------------------------------------------
 
-local HeaderIcon =
+local HeaderSmall =
 	Instance.new(
 		"TextLabel"
 	)
 
-HeaderIcon.Position =
+HeaderSmall.Position =
 	UDim2.fromOffset(
 		25,
-		20
+		16
 	)
 
-HeaderIcon.Size =
+HeaderSmall.Size =
 	UDim2.fromOffset(
-		28,
-		30
+		300,
+		15
 	)
 
-HeaderIcon.BackgroundTransparency = 1
+HeaderSmall.BackgroundTransparency =
+	1
 
-HeaderIcon.Text = "◈"
+HeaderSmall.Text =
+	"CONTROLE LOCAL"
 
-HeaderIcon.TextColor3 =
-	C.Accent
+HeaderSmall.TextColor3 =
+	COLOR.Text3
 
-HeaderIcon.TextSize = 25
+HeaderSmall.TextSize =
+	9
 
-HeaderIcon.Font =
-	Enum.Font.GothamBold
+HeaderSmall.FontFace =
+	FONT_MEDIUM
 
-HeaderIcon.Parent =
+HeaderSmall.TextXAlignment =
+	Enum.TextXAlignment.Left
+
+HeaderSmall.Parent =
 	Header
 
 ------------------------------------------------------------
@@ -1488,28 +2228,30 @@ local HeaderTitle =
 
 HeaderTitle.Position =
 	UDim2.fromOffset(
-		60,
-		21
+		24,
+		31
 	)
 
 HeaderTitle.Size =
 	UDim2.fromOffset(
-		240,
-		28
+		260,
+		30
 	)
 
-HeaderTitle.BackgroundTransparency = 1
+HeaderTitle.BackgroundTransparency =
+	1
 
 HeaderTitle.Text =
-	"DIVERSOS"
+	"PRINCIPAL"
 
 HeaderTitle.TextColor3 =
-	C.Accent
+	COLOR.Accent
 
-HeaderTitle.TextSize = 17
+HeaderTitle.TextSize =
+	20
 
-HeaderTitle.Font =
-	Enum.Font.GothamBold
+HeaderTitle.FontFace =
+	FONT_BOLD
 
 HeaderTitle.TextXAlignment =
 	Enum.TextXAlignment.Left
@@ -1518,51 +2260,7 @@ HeaderTitle.Parent =
 	Header
 
 ------------------------------------------------------------
--- MOON
-------------------------------------------------------------
-
-local Moon =
-	Instance.new(
-		"TextButton"
-	)
-
-Moon.AnchorPoint =
-	Vector2.new(
-		1,
-		0.5
-	)
-
-Moon.Position =
-	UDim2.new(
-		1,
-		-60,
-		0.5,
-		0
-	)
-
-Moon.Size =
-	UDim2.fromOffset(
-		36,
-		36
-	)
-
-Moon.BackgroundTransparency = 1
-
-Moon.Text = "☾"
-
-Moon.TextColor3 =
-	C.Accent
-
-Moon.TextSize = 28
-
-Moon.Font =
-	Enum.Font.GothamBold
-
-Moon.Parent =
-	Header
-
-------------------------------------------------------------
--- MINIMIZE
+-- MINIMIZE BUTTON
 ------------------------------------------------------------
 
 local Minimize =
@@ -1573,869 +2271,432 @@ local Minimize =
 Minimize.AnchorPoint =
 	Vector2.new(
 		1,
-		0.5
+		0
 	)
 
 Minimize.Position =
 	UDim2.new(
 		1,
-		-17,
-		0.5,
-		0
+		-21,
+		0,
+		21
 	)
 
 Minimize.Size =
 	UDim2.fromOffset(
-		36,
-		36
+		39,
+		34
 	)
 
-Minimize.BackgroundTransparency = 1
+Minimize.BackgroundColor3 =
+	COLOR.Control
 
-Minimize.Text = "×"
+Minimize.BorderSizePixel =
+	0
+
+Minimize.Text =
+	"—"
 
 Minimize.TextColor3 =
-	C.Accent
+	COLOR.Accent
 
-Minimize.TextSize = 31
+Minimize.TextSize =
+	19
 
-Minimize.Font =
-	Enum.Font.Gotham
+Minimize.FontFace =
+	FONT_BOLD
+
+Minimize.AutoButtonColor =
+	false
+
+Minimize.ZIndex =
+	10
 
 Minimize.Parent =
 	Header
 
+AddCorner(
+	Minimize,
+	9
+)
+
+local MinimizeStroke =
+	AddStroke(
+
+	Minimize,
+
+	COLOR.Stroke,
+
+	1,
+
+	0.1
+)
+
 ------------------------------------------------------------
--- PAGES HOLDER
+-- CONTENT SCROLL
 ------------------------------------------------------------
 
-local Pages =
+local Scroll =
 	Instance.new(
-		"Frame"
+		"ScrollingFrame"
 	)
 
-Pages.Position =
+Scroll.Position =
 	UDim2.fromOffset(
-		20,
-		72
+		22,
+		76
 	)
 
-Pages.Size =
+Scroll.Size =
 	UDim2.new(
 		1,
-		-30,
+		-32,
 		1,
-		-83
+		-91
 	)
 
-Pages.BackgroundTransparency = 1
+Scroll.BackgroundTransparency =
+	1
 
-Pages.Parent =
+Scroll.BorderSizePixel =
+	0
+
+Scroll.ScrollBarThickness =
+	3
+
+Scroll.ScrollBarImageColor3 =
+	COLOR.Accent
+
+Scroll.ScrollBarImageTransparency =
+	0.18
+
+Scroll.AutomaticCanvasSize =
+	Enum.AutomaticSize.Y
+
+Scroll.CanvasSize =
+	UDim2.fromOffset(
+		0,
+		0
+	)
+
+Scroll.ScrollingDirection =
+	Enum.ScrollingDirection.Y
+
+Scroll.ZIndex =
+	4
+
+Scroll.Parent =
 	Content
 
 ------------------------------------------------------------
--- PAGE CREATOR
+-- RIGHT PADDING
 ------------------------------------------------------------
 
-local PageFrames = {}
-
-local function CreatePage(
-	name
-)
-
-	local page =
-		Instance.new(
-			"ScrollingFrame"
-		)
-
-	page.Name = name
-
-	page.Size =
-		UDim2.fromScale(
-			1,
-			1
-		)
-
-	page.BackgroundTransparency = 1
-
-	page.BorderSizePixel = 0
-
-	page.ScrollBarThickness = 4
-
-	page.ScrollBarImageColor3 =
-		Color3.fromRGB(
-			31,
-			46,
-			62
-		)
-
-	page.CanvasSize =
-		UDim2.fromOffset(
-			0,
-			0
-		)
-
-	page.AutomaticCanvasSize =
-		Enum.AutomaticSize.Y
-
-	page.ScrollingDirection =
-		Enum.ScrollingDirection.Y
-
-	page.Visible = false
-
-	page.Parent =
-		Pages
-
-	--------------------------------------------------------
-
-	local padding =
-		Instance.new(
-			"UIPadding"
-		)
-
-	padding.PaddingRight =
-		UDim.new(
-			0,
-			12
-		)
-
-	padding.Parent =
-		page
-
-	--------------------------------------------------------
-
-	local layout =
-		Instance.new(
-			"UIListLayout"
-		)
-
-	layout.Padding =
-		UDim.new(
-			0,
-			12
-		)
-
-	layout.SortOrder =
-		Enum.SortOrder.LayoutOrder
-
-	layout.Parent =
-		page
-
-	PageFrames[name] =
-		page
-
-	return page
-
-end
-
-------------------------------------------------------------
--- PAGES
-------------------------------------------------------------
-
-local PrincipalPage =
-	CreatePage(
-		"Principal"
+local ScrollPadding =
+	Instance.new(
+		"UIPadding"
 	)
 
-local VisualPage =
-	CreatePage(
-		"Visuais"
+ScrollPadding.PaddingRight =
+	UDim.new(
+		0,
+		10
 	)
 
-local DiversosPage =
-	CreatePage(
-		"Diversos"
+ScrollPadding.Parent =
+	Scroll
+
+------------------------------------------------------------
+-- LIST
+------------------------------------------------------------
+
+local ScrollList =
+	Instance.new(
+		"UIListLayout"
 	)
 
-local AjustesPage =
-	CreatePage(
-		"Ajustes"
+ScrollList.Padding =
+	UDim.new(
+		0,
+		12
 	)
 
-local ContaPage =
-	CreatePage(
-		"Conta"
+ScrollList.SortOrder =
+	Enum.SortOrder.LayoutOrder
+
+ScrollList.Parent =
+	Scroll
+
+------------------------------------------------------------
+-- SECTION LABEL
+------------------------------------------------------------
+
+local Section =
+	Instance.new(
+		"TextLabel"
 	)
 
-------------------------------------------------------------
--- NAVIGATION
-------------------------------------------------------------
-
-local NavButtons = {}
-
-local PageInfo = {
-
-	Principal = {
-		Icon = "⊕",
-		Name = "Principal",
-	},
-
-	Visuais = {
-		Icon = "◉",
-		Name = "Visuais",
-	},
-
-	Diversos = {
-		Icon = "◇",
-		Name = "Diversos",
-	},
-
-	Ajustes = {
-		Icon = "⚙",
-		Name = "Ajustes",
-	},
-
-	Conta = {
-		Icon = "♙",
-		Name = "Conta",
-	},
-}
-
-------------------------------------------------------------
--- SET PAGE
-------------------------------------------------------------
-
-local function SetPage(
-	pageName
-)
-
-	for name, page
-		in pairs(
-			PageFrames
-		)
-	do
-
-		page.Visible =
-			name == pageName
-
-	end
-
-	for name, data
-		in pairs(
-			NavButtons
-		)
-	do
-
-		local active =
-			name == pageName
-
-		Tween(
-			data.Text,
-			0.15,
-			{
-				TextColor3 =
-					active
-					and C.Accent
-					or C.Text
-			}
-		)
-
-		Tween(
-			data.Icon,
-			0.15,
-			{
-				TextColor3 =
-					active
-					and C.Accent
-					or C.SubText
-			}
-		)
-
-	end
-
-	local info =
-		PageInfo[
-			pageName
-		]
-
-	HeaderIcon.Text =
-		info.Icon
-
-	HeaderTitle.Text =
-		string.upper(
-			info.Name
-		)
-
-end
-
-------------------------------------------------------------
--- NAV BUTTON CREATOR
-------------------------------------------------------------
-
-local NavOrder = {
-
-	"Principal",
-	"Visuais",
-	"Diversos",
-	"Ajustes",
-	"Conta",
-
-}
-
-for order, pageName
-	in ipairs(
-		NavOrder
-	)
-do
-
-	local info =
-		PageInfo[
-			pageName
-		]
-
-	local button =
-		Instance.new(
-			"TextButton"
-		)
-
-	button.LayoutOrder =
-		order
-
-	button.Size =
-		UDim2.new(
-			1,
-			0,
-			0,
-			55
-		)
-
-	button.BackgroundTransparency = 1
-
-	button.Text = ""
-
-	button.AutoButtonColor = false
-
-	button.Parent =
-		Nav
-
-	--------------------------------------------------------
-
-	local icon =
-		Instance.new(
-			"TextLabel"
-		)
-
-	icon.Position =
-		UDim2.fromOffset(
-			5,
-			2
-		)
-
-	icon.Size =
-		UDim2.fromOffset(
-			40,
-			32
-		)
-
-	icon.BackgroundTransparency = 1
-
-	icon.Text =
-		info.Icon
-
-	icon.TextColor3 =
-		C.SubText
-
-	icon.TextSize = 24
-
-	icon.Font =
-		Enum.Font.GothamBold
-
-	icon.Parent =
-		button
-
-	--------------------------------------------------------
-
-	local text =
-		Instance.new(
-			"TextLabel"
-		)
-
-	text.Position =
-		UDim2.fromOffset(
-			0,
-			33
-		)
-
-	text.Size =
-		UDim2.new(
-			1,
-			0,
-			0,
-			19
-		)
-
-	text.BackgroundTransparency = 1
-
-	text.Text =
-		info.Name
-
-	text.TextColor3 =
-		C.Text
-
-	text.TextSize = 14
-
-	text.Font =
-		Enum.Font.GothamMedium
-
-	text.Parent =
-		button
-
-	--------------------------------------------------------
-
-	NavButtons[
-		pageName
-	] = {
-
-		Button = button,
-
-		Icon = icon,
-
-		Text = text,
-	}
-
-	button.MouseButton1Click:Connect(
-		function()
-
-			SetPage(
-				pageName
-			)
-
-		end
+Section.Size =
+	UDim2.new(
+		1,
+		0,
+		0,
+		22
 	)
 
-end
+Section.BackgroundTransparency =
+	1
+
+Section.Text =
+	"UTILIDADES"
+
+Section.TextColor3 =
+	COLOR.Text3
+
+Section.TextSize =
+	9
+
+Section.FontFace =
+	FONT_BOLD
+
+Section.TextXAlignment =
+	Enum.TextXAlignment.Left
+
+Section.Parent =
+	Scroll
 
 ------------------------------------------------------------
--- ROW CREATOR
+-- CARD CREATOR
 ------------------------------------------------------------
 
-local function CreateRow(
-	parent,
+local function CreateCard(
 	title,
 	description
 )
 
-	local row =
+	local Card =
 		Instance.new(
 			"Frame"
 		)
 
-	row.Size =
+	Card.Size =
 		UDim2.new(
 			1,
 			0,
 			0,
-			62
+			76
 		)
 
-	row.BackgroundColor3 =
-		C.Row
+	Card.BackgroundColor3 =
+		COLOR.Card
 
-	row.BorderSizePixel = 0
+	Card.BorderSizePixel =
+		0
 
-	row.Parent =
-		parent
+	Card.ZIndex =
+		5
 
-	Corner(
-		row,
-		9
+	Card.Parent =
+		Scroll
+
+	AddCorner(
+		Card,
+		11
+	)
+
+	local CardStroke =
+		AddStroke(
+
+		Card,
+
+		COLOR.StrokeSoft,
+
+		1,
+
+		0.08
 	)
 
 	--------------------------------------------------------
+	-- LEFT ACCENT DOT
+	--------------------------------------------------------
 
-	local titleLabel =
+	local Dot =
+		Instance.new(
+			"Frame"
+		)
+
+	Dot.Position =
+		UDim2.fromOffset(
+			17,
+			21
+		)
+
+	Dot.Size =
+		UDim2.fromOffset(
+			6,
+			34
+		)
+
+	Dot.BackgroundColor3 =
+		COLOR.Accent
+
+	Dot.BorderSizePixel =
+		0
+
+	Dot.Parent =
+		Card
+
+	AddCorner(
+		Dot,
+		3
+	)
+
+	--------------------------------------------------------
+	-- TITLE
+	--------------------------------------------------------
+
+	local Title =
 		Instance.new(
 			"TextLabel"
 		)
 
-	titleLabel.Position =
+	Title.Position =
 		UDim2.fromOffset(
-			19,
-			description and 10 or 0
+			35,
+			15
 		)
 
-	titleLabel.Size =
+	Title.Size =
 		UDim2.new(
 			1,
-			-180,
+			-205,
 			0,
-			description and 22 or 62
+			25
 		)
 
-	titleLabel.BackgroundTransparency = 1
+	Title.BackgroundTransparency =
+		1
 
-	titleLabel.Text =
+	Title.Text =
 		title
 
-	titleLabel.TextColor3 =
-		C.Text
+	Title.TextColor3 =
+		COLOR.Text
 
-	titleLabel.TextSize = 16
+	Title.TextSize =
+		15
 
-	titleLabel.Font =
-		Enum.Font.GothamMedium
+	Title.FontFace =
+		FONT_MEDIUM
 
-	titleLabel.TextXAlignment =
+	Title.TextXAlignment =
 		Enum.TextXAlignment.Left
 
-	titleLabel.TextYAlignment =
+	Title.Parent =
+		Card
+
+	--------------------------------------------------------
+	-- DESCRIPTION
+	--------------------------------------------------------
+
+	local Description =
+		Instance.new(
+			"TextLabel"
+		)
+
+	Description.Position =
+		UDim2.fromOffset(
+			35,
+			42
+		)
+
+	Description.Size =
+		UDim2.new(
+			1,
+			-205,
+			0,
+			18
+		)
+
+	Description.BackgroundTransparency =
+		1
+
+	Description.Text =
 		description
-		and Enum.TextYAlignment.Bottom
-		or Enum.TextYAlignment.Center
 
-	titleLabel.Parent =
-		row
+	Description.TextColor3 =
+		COLOR.Text2
 
-	--------------------------------------------------------
+	Description.TextSize =
+		10
 
-	local descriptionLabel
+	Description.FontFace =
+		FONT_REGULAR
 
-	if description then
+	Description.TextXAlignment =
+		Enum.TextXAlignment.Left
 
-		descriptionLabel =
-			Instance.new(
-				"TextLabel"
-			)
-
-		descriptionLabel.Position =
-			UDim2.fromOffset(
-				19,
-				34
-			)
-
-		descriptionLabel.Size =
-			UDim2.new(
-				1,
-				-190,
-				0,
-				17
-			)
-
-		descriptionLabel.BackgroundTransparency = 1
-
-		descriptionLabel.Text =
-			description
-
-		descriptionLabel.TextColor3 =
-			C.SubText
-
-		descriptionLabel.TextSize = 10
-
-		descriptionLabel.Font =
-			Enum.Font.Gotham
-
-		descriptionLabel.TextXAlignment =
-			Enum.TextXAlignment.Left
-
-		descriptionLabel.Parent =
-			row
-
-	end
-
-	return row,
-		titleLabel,
-		descriptionLabel
-
-end
-
-------------------------------------------------------------
--- TOGGLE CREATOR
-------------------------------------------------------------
-
-local function CreateToggle(
-	row,
-	callback
-)
-
-	local enabled = false
+	Description.Parent =
+		Card
 
 	--------------------------------------------------------
-	-- WHITE SWITCH
+	-- HOVER
 	--------------------------------------------------------
 
-	local track =
-		Instance.new(
-			"Frame"
-		)
-
-	track.AnchorPoint =
-		Vector2.new(
-			1,
-			0.5
-		)
-
-	track.Position =
-		UDim2.new(
-			1,
-			-68,
-			0.5,
-			0
-		)
-
-	track.Size =
-		UDim2.fromOffset(
-			38,
-			23
-		)
-
-	track.BackgroundColor3 =
-		C.Track
-
-	track.BorderSizePixel = 0
-
-	track.Parent =
-		row
-
-	Corner(
-		track,
-		12
-	)
-
-	--------------------------------------------------------
-	-- SWITCH DOT
-	--------------------------------------------------------
-
-	local dot =
-		Instance.new(
-			"Frame"
-		)
-
-	dot.AnchorPoint =
-		Vector2.new(
-			0.5,
-			0.5
-		)
-
-	dot.Position =
-		UDim2.fromOffset(
-			11,
-			11.5
-		)
-
-	dot.Size =
-		UDim2.fromOffset(
-			17,
-			17
-		)
-
-	dot.BackgroundColor3 =
-		Color3.fromRGB(
-			24,
-			30,
-			36
-		)
-
-	dot.BorderSizePixel = 0
-
-	dot.Parent =
-		track
-
-	Corner(
-		dot,
-		9
-	)
-
-	--------------------------------------------------------
-	-- CHECKBOX
-	--------------------------------------------------------
-
-	local check =
-		Instance.new(
-			"TextButton"
-		)
-
-	check.AnchorPoint =
-		Vector2.new(
-			1,
-			0.5
-		)
-
-	check.Position =
-		UDim2.new(
-			1,
-			-15,
-			0.5,
-			0
-		)
-
-	check.Size =
-		UDim2.fromOffset(
-			31,
-			31
-		)
-
-	check.BackgroundColor3 =
-		C.Disabled
-
-	check.BorderSizePixel = 0
-
-	check.Text = ""
-
-	check.TextColor3 =
-		Color3.new(
-			1,
-			1,
-			1
-		)
-
-	check.TextSize = 19
-
-	check.Font =
-		Enum.Font.GothamBold
-
-	check.AutoButtonColor = false
-
-	check.Parent =
-		row
-
-	Corner(
-		check,
-		8
-	)
-
-	--------------------------------------------------------
-
-	local function Set(
-		state
-	)
-
-		enabled = state
-
-		Tween(
-			dot,
-			0.18,
-			{
-				Position =
-					state
-					and UDim2.fromOffset(
-						27,
-						11.5
-					)
-					or UDim2.fromOffset(
-						11,
-						11.5
-					)
-			}
-		)
-
-		Tween(
-			check,
-			0.16,
-			{
-				BackgroundColor3 =
-					state
-					and C.Accent
-					or C.Disabled
-			}
-		)
-
-		check.Text =
-			state
-			and "✓"
-			or ""
-
-		if callback then
-
-			callback(
-				state
-			)
-
-		end
-
-	end
-
-	check.MouseButton1Click:Connect(
+	Card.MouseEnter:Connect(
 		function()
 
-			Set(
-				not enabled
+			Tween(
+				Card,
+				0.13,
+				{
+					BackgroundColor3 =
+						COLOR.CardHover
+				}
 			)
 
-		end
-	)
-
-	track.InputBegan:Connect(
-		function(input)
-
-			if input.UserInputType ==
-				Enum.UserInputType.MouseButton1
-			then
-
-				Set(
-					not enabled
-				)
-
-			end
+			CardStroke.Color =
+				COLOR.Stroke
 
 		end
 	)
 
-	return {
+	Card.MouseLeave:Connect(
+		function()
 
-		Set = Set,
+			Tween(
+				Card,
+				0.13,
+				{
+					BackgroundColor3 =
+						COLOR.Card
+				}
+			)
 
-		Get = function()
+			CardStroke.Color =
+				COLOR.StrokeSoft
 
-			return enabled
+		end
+	)
 
-		end,
-
-		Check = check,
-
-		Track = track,
-	}
+	return Card,
+		Title,
+		Description
 
 end
 
 ------------------------------------------------------------
--- PRINCIPAL PAGE
+-- ELEVATOR
 ------------------------------------------------------------
 
-local WelcomeRow =
-	CreateRow(
-		PrincipalPage,
-		"SOUZA PANEL",
-		"Painel local de utilidades"
-	)
-
-local StatusRow,
-	StatusTitle,
-	StatusDescription =
-	CreateRow(
-		PrincipalPage,
-		"Status",
-		"Interface carregada"
-	)
-
-------------------------------------------------------------
--- VISUAL PAGE
-------------------------------------------------------------
-
-local PlatformLogoRow =
-	CreateRow(
-		VisualPage,
-		"Logo na plataforma",
-		"Sua logo aparece na parte superior do bloco"
-	)
-
-local UIInfoRow =
-	CreateRow(
-		VisualPage,
-		"Interface",
-		"Layout inspirado na referência enviada"
-	)
-
-------------------------------------------------------------
--- DIVERSOS - ELEVATOR
-------------------------------------------------------------
-
-local ElevatorRow,
+local ElevatorCard,
 	ElevatorTitle,
 	ElevatorDescription =
-	CreateRow(
-		DiversosPage,
-		"Elevador",
-		"Nível 0 • desativado"
+	CreateCard(
+
+		"ELEVADOR",
+
+		"Desativado"
 	)
 
 ------------------------------------------------------------
@@ -2463,14 +2724,18 @@ ElevatorControls.Position =
 
 ElevatorControls.Size =
 	UDim2.fromOffset(
-		155,
-		40
+		161,
+		42
 	)
 
-ElevatorControls.BackgroundTransparency = 1
+ElevatorControls.BackgroundTransparency =
+	1
+
+ElevatorControls.ZIndex =
+	7
 
 ElevatorControls.Parent =
-	ElevatorRow
+	ElevatorCard
 
 ------------------------------------------------------------
 -- MINUS
@@ -2481,39 +2746,99 @@ local Minus =
 		"TextButton"
 	)
 
+Minus.Position =
+	UDim2.fromOffset(
+		0,
+		0
+	)
+
 Minus.Size =
 	UDim2.fromOffset(
-		40,
-		40
+		42,
+		42
 	)
 
 Minus.BackgroundColor3 =
-	C.Disabled
+	COLOR.Control
 
-Minus.BorderSizePixel = 0
+Minus.BorderSizePixel =
+	0
 
-Minus.Text = "−"
+Minus.Text =
+	"−"
 
 Minus.TextColor3 =
-	C.Text
+	COLOR.Text
 
-Minus.TextSize = 25
+Minus.TextSize =
+	23
 
-Minus.Font =
-	Enum.Font.GothamBold
+Minus.FontFace =
+	FONT_BOLD
 
-Minus.AutoButtonColor = false
+Minus.AutoButtonColor =
+	false
 
 Minus.Parent =
 	ElevatorControls
 
-Corner(
+AddCorner(
 	Minus,
-	8
+	9
+)
+
+AddStroke(
+
+	Minus,
+
+	COLOR.Stroke,
+
+	1,
+
+	0.1
 )
 
 ------------------------------------------------------------
--- LEVEL
+-- LEVEL BOX
+------------------------------------------------------------
+
+local LevelBox =
+	Instance.new(
+		"Frame"
+	)
+
+LevelBox.Position =
+	UDim2.fromOffset(
+		49,
+		0
+	)
+
+LevelBox.Size =
+	UDim2.fromOffset(
+		63,
+		42
+	)
+
+LevelBox.BackgroundColor3 =
+	Color3.fromRGB(
+		238,
+		242,
+		247
+	)
+
+LevelBox.BorderSizePixel =
+	0
+
+LevelBox.Parent =
+	ElevatorControls
+
+AddCorner(
+	LevelBox,
+	9
+)
+
+------------------------------------------------------------
+-- LEVEL TEXT
 ------------------------------------------------------------
 
 local LevelText =
@@ -2521,44 +2846,33 @@ local LevelText =
 		"TextLabel"
 	)
 
-LevelText.Position =
-	UDim2.fromOffset(
-		47,
-		0
-	)
-
 LevelText.Size =
-	UDim2.fromOffset(
-		60,
-		40
+	UDim2.fromScale(
+		1,
+		1
 	)
 
-LevelText.BackgroundColor3 =
-	C.Track
+LevelText.BackgroundTransparency =
+	1
 
-LevelText.BorderSizePixel = 0
-
-LevelText.Text = "0"
+LevelText.Text =
+	"0"
 
 LevelText.TextColor3 =
 	Color3.fromRGB(
-		18,
-		24,
-		30
+		16,
+		21,
+		28
 	)
 
-LevelText.TextSize = 15
+LevelText.TextSize =
+	14
 
-LevelText.Font =
-	Enum.Font.GothamBold
+LevelText.FontFace =
+	FONT_BOLD
 
 LevelText.Parent =
-	ElevatorControls
-
-Corner(
-	LevelText,
-	8
-)
+	LevelBox
 
 ------------------------------------------------------------
 -- PLUS
@@ -2571,82 +2885,85 @@ local Plus =
 
 Plus.Position =
 	UDim2.fromOffset(
-		114,
+		119,
 		0
 	)
 
 Plus.Size =
 	UDim2.fromOffset(
-		40,
-		40
+		42,
+		42
 	)
 
 Plus.BackgroundColor3 =
-	C.Accent
+	COLOR.Accent
 
-Plus.BorderSizePixel = 0
+Plus.BorderSizePixel =
+	0
 
-Plus.Text = "+"
+Plus.Text =
+	"+"
 
 Plus.TextColor3 =
-	Color3.new(
-		1,
-		1,
-		1
-	)
+	COLOR.White
 
-Plus.TextSize = 24
+Plus.TextSize =
+	23
 
-Plus.Font =
-	Enum.Font.GothamBold
+Plus.FontFace =
+	FONT_BOLD
 
-Plus.AutoButtonColor = false
+Plus.AutoButtonColor =
+	false
 
 Plus.Parent =
 	ElevatorControls
 
-Corner(
+AddCorner(
 	Plus,
-	8
+	9
 )
 
 ------------------------------------------------------------
--- UPDATE ELEVATOR
+-- UPDATE ELEVATOR TEXT
 ------------------------------------------------------------
 
-local function UpdateElevator()
+local function UpdateElevatorUI()
 
 	LevelText.Text =
 		tostring(
 			Level
 		)
 
-	if Platform then
+	if not Platform then
+
+		ElevatorDescription.Text =
+			"Desativado"
+
+	else
+
+		local Height =
+			math.max(
+				Level - 1,
+				0
+			)
+			* CONFIG.StepHeight
 
 		ElevatorDescription.Text =
 			"Nível "
 			.. Level
-			.. " • "
+			.. "  •  "
 			.. string.format(
 				"%.1f studs",
-				math.max(
-					Level - 1,
-					0
-				)
-				* CONFIG.StepHeight
+				Height
 			)
-
-	else
-
-		ElevatorDescription.Text =
-			"Nível 0 • desativado"
 
 	end
 
 end
 
 ------------------------------------------------------------
--- +
+-- PLUS FUNCTION
 ------------------------------------------------------------
 
 Plus.MouseButton1Click:Connect(
@@ -2655,6 +2972,11 @@ Plus.MouseButton1Click:Connect(
 		if not Root then
 			return
 		end
+
+		----------------------------------------------------
+		-- PRIMEIRO +
+		-- só cria debaixo do player
+		----------------------------------------------------
 
 		if not Platform then
 
@@ -2665,11 +2987,13 @@ Plus.MouseButton1Click:Connect(
 			TargetY =
 				BaseY
 
-			UpdateElevator()
+			UpdateElevatorUI()
 
 			return
 
 		end
+
+		----------------------------------------------------
 
 		if Level >=
 			CONFIG.MaxLevel
@@ -2681,12 +3005,6 @@ Plus.MouseButton1Click:Connect(
 
 		Level += 1
 
-		----------------------------------------------------
-		-- Nível 1 = base
-		-- Nível 2 = +2.2
-		-- Nível 3 = +4.4
-		----------------------------------------------------
-
 		TargetY =
 			BaseY
 			+ (
@@ -2694,13 +3012,13 @@ Plus.MouseButton1Click:Connect(
 			)
 			* CONFIG.StepHeight
 
-		UpdateElevator()
+		UpdateElevatorUI()
 
 	end
 )
 
 ------------------------------------------------------------
--- -
+-- MINUS FUNCTION
 ------------------------------------------------------------
 
 Minus.MouseButton1Click:Connect(
@@ -2721,7 +3039,7 @@ Minus.MouseButton1Click:Connect(
 				)
 				* CONFIG.StepHeight
 
-			UpdateElevator()
+			UpdateElevatorUI()
 
 			return
 
@@ -2729,154 +3047,41 @@ Minus.MouseButton1Click:Connect(
 
 		RemovePlatform()
 
-		UpdateElevator()
+		UpdateElevatorUI()
 
 	end
 )
 
 ------------------------------------------------------------
--- DESCNY ROW
+-- DESCNY CARD
 ------------------------------------------------------------
 
-local DescnyRow,
+local DescnyCard,
 	DescnyTitle,
 	DescnyDescription =
-	CreateRow(
-		DiversosPage,
+	CreateCard(
+
 		"DESCNY",
-		"Procura item de invisibilidade"
-	)
 
-local DescnyToggle
-
-DescnyToggle =
-	CreateToggle(
-		DescnyRow,
-
-		function(state)
-
-			if not state then
-
-				DescnyDescription.Text =
-					"Procura item de invisibilidade"
-
-				return
-
-			end
-
-			local success, result =
-				ActivateDescny()
-
-			if success then
-
-				DescnyDescription.Text =
-					"Ativado • "
-					.. tostring(
-						result
-					)
-
-			else
-
-				DescnyDescription.Text =
-					tostring(
-						result
-					)
-
-				task.delay(
-					0.6,
-					function()
-
-						if DescnyToggle then
-
-							DescnyToggle.Set(
-								false
-							)
-
-						end
-
-					end
-				)
-
-			end
-
-		end
+		"Procura a capa ou item de invisibilidade"
 	)
 
 ------------------------------------------------------------
--- ANTILAG ROW
+-- DESCNY BUTTON
 ------------------------------------------------------------
 
-local AntiLagRow,
-	AntiLagTitle,
-	AntiLagDescription =
-	CreateRow(
-		DiversosPage,
-		"AntiLag",
-		"Reduz partículas, efeitos e sombras"
-	)
-
-local AntiLagToggle =
-	CreateToggle(
-		AntiLagRow,
-
-		function(state)
-
-			if state then
-
-				AntiLagDescription.Text =
-					"Otimizando..."
-
-				EnableAntiLag()
-
-				task.delay(
-					0.5,
-					function()
-
-						if AntiLagEnabled then
-
-							AntiLagDescription.Text =
-								"Otimização ativada"
-
-						end
-
-					end
-				)
-
-			else
-
-				DisableAntiLag()
-
-				AntiLagDescription.Text =
-					"Reduz partículas, efeitos e sombras"
-
-			end
-
-		end
-	)
-
-------------------------------------------------------------
--- REMOVE PLATFORM ROW
-------------------------------------------------------------
-
-local RemoveRow =
-	CreateRow(
-		DiversosPage,
-		"Remover plataforma",
-		"Desativa o elevador imediatamente"
-	)
-
-local RemoveButton =
+local DescnyButton =
 	Instance.new(
 		"TextButton"
 	)
 
-RemoveButton.AnchorPoint =
+DescnyButton.AnchorPoint =
 	Vector2.new(
 		1,
 		0.5
 	)
 
-RemoveButton.Position =
+DescnyButton.Position =
 	UDim2.new(
 		1,
 		-15,
@@ -2884,85 +3089,139 @@ RemoveButton.Position =
 		0
 	)
 
-RemoveButton.Size =
+DescnyButton.Size =
 	UDim2.fromOffset(
-		105,
-		34
+		125,
+		42
 	)
 
-RemoveButton.BackgroundColor3 =
-	C.Disabled
+DescnyButton.BackgroundColor3 =
+	COLOR.Control
 
-RemoveButton.BorderSizePixel = 0
+DescnyButton.BorderSizePixel =
+	0
 
-RemoveButton.Text =
-	"REMOVER"
+DescnyButton.Text =
+	"ATIVAR"
 
-RemoveButton.TextColor3 =
-	C.Text
+DescnyButton.TextColor3 =
+	COLOR.Text
 
-RemoveButton.TextSize = 11
+DescnyButton.TextSize =
+	11
 
-RemoveButton.Font =
-	Enum.Font.GothamBold
+DescnyButton.FontFace =
+	FONT_BOLD
 
-RemoveButton.Parent =
-	RemoveRow
+DescnyButton.AutoButtonColor =
+	false
 
-Corner(
-	RemoveButton,
-	8
+DescnyButton.Parent =
+	DescnyCard
+
+AddCorner(
+	DescnyButton,
+	9
 )
 
-RemoveButton.MouseButton1Click:Connect(
+local DescnyStroke =
+	AddStroke(
+
+	DescnyButton,
+
+	COLOR.Stroke,
+
+	1,
+
+	0.1
+)
+
+------------------------------------------------------------
+-- DESCNY CLICK
+------------------------------------------------------------
+
+DescnyButton.MouseButton1Click:Connect(
 	function()
 
-		RemovePlatform()
+		DescnyButton.Text =
+			"PROCURANDO"
 
-		UpdateElevator()
+		DescnyButton.TextColor3 =
+			COLOR.Text2
 
-	end
-)
+		local Success,
+			Result =
+			ActivateDescny()
 
-------------------------------------------------------------
--- AJUSTES PAGE
-------------------------------------------------------------
+		if Success then
 
-local ThemeRow =
-	CreateRow(
-		AjustesPage,
-		"Tema escuro",
-		"Mantém o visual preto/azul da referência"
-	)
+			DescnyButton.Text =
+				"ATIVADO"
 
-CreateToggle(
-	ThemeRow,
-	function(state)
+			DescnyButton.TextColor3 =
+				COLOR.Green
 
-		if state then
+			DescnyStroke.Color =
+				COLOR.Green
 
-			Tween(
-				Main,
-				0.25,
-				{
-					BackgroundColor3 =
-						Color3.fromRGB(
-							0,
-							3,
-							7
-						)
-				}
+			DescnyDescription.Text =
+				"Usando "
+				.. tostring(
+					Result
+				)
+
+			task.delay(
+				1.3,
+				function()
+
+					if DescnyButton.Parent then
+
+						DescnyButton.Text =
+							"ATIVAR"
+
+						DescnyButton.TextColor3 =
+							COLOR.Text
+
+						DescnyStroke.Color =
+							COLOR.Stroke
+
+					end
+
+				end
 			)
 
 		else
 
-			Tween(
-				Main,
-				0.25,
-				{
-					BackgroundColor3 =
-						C.Background
-				}
+			DescnyButton.Text =
+				"NÃO ACHOU"
+
+			DescnyButton.TextColor3 =
+				COLOR.Red
+
+			DescnyStroke.Color =
+				COLOR.Red
+
+			DescnyDescription.Text =
+				Result
+
+			task.delay(
+				1.3,
+				function()
+
+					if DescnyButton.Parent then
+
+						DescnyButton.Text =
+							"ATIVAR"
+
+						DescnyButton.TextColor3 =
+							COLOR.Text
+
+						DescnyStroke.Color =
+							COLOR.Stroke
+
+					end
+
+				end
 			)
 
 		end
@@ -2971,200 +3230,365 @@ CreateToggle(
 )
 
 ------------------------------------------------------------
--- CONTA
+-- ANTILAG CARD
 ------------------------------------------------------------
 
-CreateRow(
-	ContaPage,
-	"Jogador",
-	Player.DisplayName
-	.. "  @"
-	.. Player.Name
-)
+local AntiLagCard,
+	AntiLagTitle,
+	AntiLagDescription =
+	CreateCard(
 
-CreateRow(
-	ContaPage,
-	"User ID",
-	tostring(
-		Player.UserId
+		"ANTILAG",
+
+		"Reduz partículas, efeitos e sombras"
 	)
+
+------------------------------------------------------------
+-- TOGGLE HOLDER
+------------------------------------------------------------
+
+local AntiTrack =
+	Instance.new(
+		"TextButton"
+	)
+
+AntiTrack.AnchorPoint =
+	Vector2.new(
+		1,
+		0.5
+	)
+
+AntiTrack.Position =
+	UDim2.new(
+		1,
+		-15,
+		0.5,
+		0
+	)
+
+AntiTrack.Size =
+	UDim2.fromOffset(
+		64,
+		32
+	)
+
+AntiTrack.BackgroundColor3 =
+	COLOR.Control
+
+AntiTrack.BorderSizePixel =
+	0
+
+AntiTrack.Text =
+	""
+
+AntiTrack.AutoButtonColor =
+	false
+
+AntiTrack.Parent =
+	AntiLagCard
+
+AddCorner(
+	AntiTrack,
+	16
+)
+
+local AntiStroke =
+	AddStroke(
+
+	AntiTrack,
+
+	COLOR.Stroke,
+
+	1,
+
+	0.05
 )
 
 ------------------------------------------------------------
--- DRAG MAIN WINDOW
+-- TOGGLE DOT
 ------------------------------------------------------------
 
-local WindowDragging = false
+local AntiDot =
+	Instance.new(
+		"Frame"
+	)
 
-local WindowDragStart
+AntiDot.AnchorPoint =
+	Vector2.new(
+		0.5,
+		0.5
+	)
 
-local WindowStartPosition
+AntiDot.Position =
+	UDim2.fromOffset(
+		17,
+		16
+	)
 
-Header.Active = true
+AntiDot.Size =
+	UDim2.fromOffset(
+		22,
+		22
+	)
 
-Header.InputBegan:Connect(
-	function(input)
+AntiDot.BackgroundColor3 =
+	COLOR.Text2
 
-		if input.UserInputType ~=
-			Enum.UserInputType.MouseButton1
-		then
+AntiDot.BorderSizePixel =
+	0
 
-			return
+AntiDot.Parent =
+	AntiTrack
+
+AddCorner(
+	AntiDot,
+	11
+)
+
+------------------------------------------------------------
+-- ANTILAG TOGGLE
+------------------------------------------------------------
+
+local function UpdateAntiLagUI()
+
+	if AntiLagEnabled then
+
+		Tween(
+			AntiTrack,
+			0.17,
+			{
+				BackgroundColor3 =
+					COLOR.Accent
+			}
+		)
+
+		Tween(
+			AntiDot,
+			0.17,
+			{
+				Position =
+					UDim2.fromOffset(
+						47,
+						16
+					),
+
+				BackgroundColor3 =
+					COLOR.White
+			}
+		)
+
+		AntiStroke.Color =
+			COLOR.Accent2
+
+		AntiLagDescription.Text =
+			"Otimização ativada"
+
+	else
+
+		Tween(
+			AntiTrack,
+			0.17,
+			{
+				BackgroundColor3 =
+					COLOR.Control
+			}
+		)
+
+		Tween(
+			AntiDot,
+			0.17,
+			{
+				Position =
+					UDim2.fromOffset(
+						17,
+						16
+					),
+
+				BackgroundColor3 =
+					COLOR.Text2
+			}
+		)
+
+		AntiStroke.Color =
+			COLOR.Stroke
+
+		AntiLagDescription.Text =
+			"Reduz partículas, efeitos e sombras"
+
+	end
+
+end
+
+------------------------------------------------------------
+
+AntiTrack.MouseButton1Click:Connect(
+	function()
+
+		if AntiLagEnabled then
+
+			DisableAntiLag()
+
+		else
+
+			EnableAntiLag()
 
 		end
 
-		WindowDragging = true
-
-		WindowDragStart =
-			input.Position
-
-		WindowStartPosition =
-			Main.Position
+		UpdateAntiLagUI()
 
 	end
 )
 
-UIS.InputChanged:Connect(
-	function(input)
+------------------------------------------------------------
+-- FOOTER
+------------------------------------------------------------
 
-		if not WindowDragging then
-			return
-		end
+local Footer =
+	Instance.new(
+		"TextLabel"
+	)
 
-		if input.UserInputType ~=
-			Enum.UserInputType.MouseMovement
-		then
+Footer.Size =
+	UDim2.new(
+		1,
+		0,
+		0,
+		30
+	)
 
-			return
+Footer.BackgroundTransparency =
+	1
 
-		end
+Footer.Text =
+	"Local utilities  •  PC"
 
-		local delta =
-			input.Position
-			- WindowDragStart
+Footer.TextColor3 =
+	COLOR.Text3
 
-		Main.Position =
-			UDim2.new(
+Footer.TextSize =
+	9
 
-				WindowStartPosition.X.Scale,
+Footer.FontFace =
+	FONT_REGULAR
 
-				WindowStartPosition.X.Offset
-				+ delta.X,
+Footer.TextXAlignment =
+	Enum.TextXAlignment.Left
 
-				WindowStartPosition.Y.Scale,
-
-				WindowStartPosition.Y.Offset
-				+ delta.Y
-
-			)
-
-	end
-)
-
-UIS.InputEnded:Connect(
-	function(input)
-
-		if input.UserInputType ==
-			Enum.UserInputType.MouseButton1
-		then
-
-			WindowDragging = false
-
-		end
-
-	end
-)
+Footer.Parent =
+	Scroll
 
 ------------------------------------------------------------
 -- FLOATING BUTTON
 ------------------------------------------------------------
 
-local MiniHolder =
+local Mini =
 	Instance.new(
-		"Frame"
+		"TextButton"
 	)
 
-MiniHolder.Name =
-	"FloatingButton"
+Mini.Name =
+	"FloatingLogo"
 
--- IMPORTANTE:
--- NÃO começa mais no centro.
-MiniHolder.Position =
+-- posição inicial:
+-- esquerda da tela, não no meio
+Mini.Position =
 	UDim2.fromOffset(
-		25,
-		170
+		28,
+		175
 	)
 
-MiniHolder.Size =
+Mini.Size =
 	UDim2.fromOffset(
-		64,
-		64
+		62,
+		62
 	)
 
-MiniHolder.BackgroundColor3 =
+Mini.BackgroundColor3 =
 	Color3.fromRGB(
-		10,
-		14,
-		20
+		8,
+		12,
+		19
 	)
 
-MiniHolder.BorderSizePixel = 0
+Mini.BorderSizePixel =
+	0
 
-MiniHolder.Visible = false
+Mini.Text =
+	""
 
-MiniHolder.Active = true
+Mini.Active =
+	true
 
-MiniHolder.ZIndex = 100
+Mini.AutoButtonColor =
+	false
 
-MiniHolder.Parent =
+Mini.Selectable =
+	false
+
+Mini.Visible =
+	false
+
+Mini.ZIndex =
+	200
+
+Mini.Parent =
 	GUI
 
-Corner(
-	MiniHolder,
-	32
+AddCorner(
+	Mini,
+	31
 )
 
-Stroke(
-	MiniHolder,
-	C.Accent,
+local MiniStroke =
+	AddStroke(
+
+	Mini,
+
+	COLOR.Accent,
+
 	2,
+
 	0.05
 )
 
 ------------------------------------------------------------
--- FALLBACK LETTER
+-- MINI FALLBACK
 ------------------------------------------------------------
 
-local MiniBackup =
+local MiniFallback =
 	Instance.new(
 		"TextLabel"
 	)
 
-MiniBackup.Size =
+MiniFallback.Size =
 	UDim2.fromScale(
 		1,
 		1
 	)
 
-MiniBackup.BackgroundTransparency = 1
+MiniFallback.BackgroundTransparency =
+	1
 
-MiniBackup.Text = "S"
+MiniFallback.Text =
+	"S"
 
-MiniBackup.TextColor3 =
-	C.Accent
+MiniFallback.TextColor3 =
+	COLOR.Accent
 
-MiniBackup.TextSize = 30
+MiniFallback.TextSize =
+	28
 
-MiniBackup.Font =
-	Enum.Font.GothamBlack
+MiniFallback.FontFace =
+	FONT_BOLD
 
-MiniBackup.ZIndex = 101
+MiniFallback.ZIndex =
+	201
 
-MiniBackup.Parent =
-	MiniHolder
+MiniFallback.Parent =
+	Mini
 
 ------------------------------------------------------------
--- LOGO
+-- MINI LOGO
 ------------------------------------------------------------
 
 local MiniLogo =
@@ -3186,11 +3610,12 @@ MiniLogo.Position =
 
 MiniLogo.Size =
 	UDim2.fromOffset(
-		54,
-		54
+		52,
+		52
 	)
 
-MiniLogo.BackgroundTransparency = 1
+MiniLogo.BackgroundTransparency =
+	1
 
 MiniLogo.Image =
 	CONFIG.Logo
@@ -3198,44 +3623,22 @@ MiniLogo.Image =
 MiniLogo.ScaleType =
 	Enum.ScaleType.Fit
 
-MiniLogo.ZIndex = 102
+MiniLogo.ZIndex =
+	202
 
 MiniLogo.Parent =
-	MiniHolder
+	Mini
 
 ------------------------------------------------------------
--- MINI HITBOX
+-- STATE
 ------------------------------------------------------------
 
-local MiniHitbox =
-	Instance.new(
-		"TextButton"
-	)
-
-MiniHitbox.Size =
-	UDim2.fromScale(
-		1,
-		1
-	)
-
-MiniHitbox.BackgroundTransparency = 1
-
-MiniHitbox.Text = ""
-
-MiniHitbox.AutoButtonColor = false
-
-MiniHitbox.Active = true
-
-MiniHitbox.ZIndex = 103
-
-MiniHitbox.Parent =
-	MiniHolder
+local Minimized =
+	false
 
 ------------------------------------------------------------
--- MINIMIZE / RESTORE
+-- MINIMIZE
 ------------------------------------------------------------
-
-local Minimized = false
 
 local function MinimizeUI()
 
@@ -3243,28 +3646,63 @@ local function MinimizeUI()
 		return
 	end
 
-	Minimized = true
+	Minimized =
+		true
+
+	local CurrentMainPosition =
+		Main.AbsolutePosition
+
+	--------------------------------------------------------
+	-- mantém a bolinha perto da janela na primeira vez
+	--------------------------------------------------------
+
+	if not Mini.Visible then
+
+		local X =
+			math.max(
+				10,
+				CurrentMainPosition.X
+				- 76
+			)
+
+		local Y =
+			CurrentMainPosition.Y
+			+ 20
+
+		Mini.Position =
+			UDim2.fromOffset(
+				X,
+				Y
+			)
+
+	end
+
+	Main.Visible =
+		false
+
+	Shadow.Visible =
+		false
+
+	Mini.Visible =
+		true
+
+	Mini.BackgroundTransparency =
+		1
 
 	Tween(
-		MainScale,
-		0.12,
+		Mini,
+		0.16,
 		{
-			Scale = 0.88
+			BackgroundTransparency =
+				0
 		}
 	)
 
-	task.delay(
-		0.1,
-		function()
-
-			Main.Visible = false
-
-			MiniHolder.Visible = true
-
-		end
-	)
-
 end
+
+------------------------------------------------------------
+-- RESTORE
+------------------------------------------------------------
 
 local function RestoreUI()
 
@@ -3272,255 +3710,486 @@ local function RestoreUI()
 		return
 	end
 
-	Minimized = false
+	Minimized =
+		false
 
-	MiniHolder.Visible = false
+	Mini.Visible =
+		false
 
-	Main.Visible = true
+	Main.Visible =
+		true
 
-	MainScale.Scale = 0.88
-
-	Tween(
-		MainScale,
-		0.18,
-		{
-			Scale = 1
-		}
-	)
+	Shadow.Visible =
+		true
 
 end
 
+------------------------------------------------------------
+-- MINIMIZE CLICK
+------------------------------------------------------------
+
 Minimize.MouseButton1Click:Connect(
-	MinimizeUI
+	function()
+
+		MinimizeUI()
+
+	end
 )
 
 ------------------------------------------------------------
--- FIX PRINCIPAL:
--- CÍRCULO 100% ARRASTÁVEL
+-- RIGHT SHIFT SAFETY
 ------------------------------------------------------------
 
-local MiniDragging = false
+UIS.InputBegan:Connect(
+	function(input, processed)
 
-local MiniMoved = false
+		if processed then
+			return
+		end
 
-local MiniDragStart
+		if input.KeyCode ==
+			Enum.KeyCode.RightShift
+		then
 
-local MiniStartPosition
+			if Minimized then
 
-local DRAG_THRESHOLD = 6
+				RestoreUI()
+
+			else
+
+				MinimizeUI()
+
+			end
+
+		end
+
+	end
+)
 
 ------------------------------------------------------------
--- KEEP INSIDE SCREEN
+-- CLAMP POSITION HELPER
 ------------------------------------------------------------
 
-local function ClampMini(
+local function ClampToScreen(
+	target,
 	x,
 	y
 )
 
-	local camera =
-		workspace.CurrentCamera
-
-	if not camera then
-
-		return x, y
-
-	end
-
 	local viewport =
-		camera.ViewportSize
+		Camera.ViewportSize
 
 	local width =
-		MiniHolder.AbsoluteSize.X
+		target.AbsoluteSize.X
 
 	local height =
-		MiniHolder.AbsoluteSize.Y
+		target.AbsoluteSize.Y
 
 	x =
 		math.clamp(
+
 			x,
-			5,
-			viewport.X
+
+			6,
+
+			math.max(
+				6,
+				viewport.X
 				- width
-				- 5
+				- 6
+			)
 		)
 
 	y =
 		math.clamp(
+
 			y,
-			5,
-			viewport.Y
+
+			6,
+
+			math.max(
+				6,
+				viewport.Y
 				- height
-				- 5
+				- 6
+			)
 		)
 
-	return x, y
+	return x,
+		y
+
 end
 
 ------------------------------------------------------------
--- BEGIN DRAG
+-- MAIN WINDOW DRAG
+-- absolute pixel based
 ------------------------------------------------------------
 
-MiniHitbox.InputBegan:Connect(
-	function(input)
+do
 
-		if input.UserInputType ~=
-			Enum.UserInputType.MouseButton1
-		then
+	local Dragging =
+		false
 
-			return
+	local StartMouse
+
+	local StartFrame
+
+	--------------------------------------------------------
+
+	Header.InputBegan:Connect(
+		function(input)
+
+			if input.UserInputType
+				~= Enum.UserInputType.MouseButton1
+			then
+
+				return
+
+			end
+
+			Dragging =
+				true
+
+			StartMouse =
+				UIS:GetMouseLocation()
+
+			StartFrame =
+				Vector2.new(
+
+					Main.AbsolutePosition.X,
+
+					Main.AbsolutePosition.Y
+				)
 
 		end
+	)
 
-		MiniDragging = true
+	--------------------------------------------------------
 
-		MiniMoved = false
+	UIS.InputChanged:Connect(
+		function(input)
 
-		MiniDragStart =
-			input.Position
+			if not Dragging then
+				return
+			end
 
-		MiniStartPosition =
-			MiniHolder.Position
+			if input.UserInputType
+				~= Enum.UserInputType.MouseMovement
+			then
 
-	end
-)
+				return
+
+			end
+
+			local Mouse =
+				UIS:GetMouseLocation()
+
+			local Delta =
+				Mouse
+				- StartMouse
+
+			local X =
+				StartFrame.X
+				+ Delta.X
+
+			local Y =
+				StartFrame.Y
+				+ Delta.Y
+
+			X, Y =
+				ClampToScreen(
+					Main,
+					X,
+					Y
+				)
+
+			Main.Position =
+				UDim2.fromOffset(
+					X,
+					Y
+				)
+
+			Shadow.Position =
+				UDim2.fromOffset(
+					X + 9,
+					Y + 11
+				)
+
+		end
+	)
+
+	--------------------------------------------------------
+
+	UIS.InputEnded:Connect(
+		function(input)
+
+			if input.UserInputType
+				== Enum.UserInputType.MouseButton1
+			then
+
+				Dragging =
+					false
+
+			end
+
+		end
+	)
+
+end
 
 ------------------------------------------------------------
--- DRAG
+-- MINI DRAG
+-- REBUILT COMPLETELY
 ------------------------------------------------------------
 
-UIS.InputChanged:Connect(
-	function(input)
+do
 
-		if not MiniDragging then
-			return
+	local Dragging =
+		false
+
+	local Moved =
+		false
+
+	local StartMouse
+
+	local StartButton
+
+	local Threshold =
+		5
+
+	--------------------------------------------------------
+	-- MOUSE DOWN DIRECTLY ON TEXTBUTTON
+	--------------------------------------------------------
+
+	Mini.InputBegan:Connect(
+		function(input)
+
+			if input.UserInputType
+				~= Enum.UserInputType.MouseButton1
+			then
+
+				return
+
+			end
+
+			Dragging =
+				true
+
+			Moved =
+				false
+
+			StartMouse =
+				UIS:GetMouseLocation()
+
+			StartButton =
+				Vector2.new(
+
+					Mini.AbsolutePosition.X,
+
+					Mini.AbsolutePosition.Y
+				)
+
 		end
+	)
 
-		if input.UserInputType ~=
-			Enum.UserInputType.MouseMovement
-		then
+	--------------------------------------------------------
+	-- MOVE
+	--------------------------------------------------------
 
-			return
+	UIS.InputChanged:Connect(
+		function(input)
+
+			if not Dragging then
+				return
+			end
+
+			if input.UserInputType
+				~= Enum.UserInputType.MouseMovement
+			then
+
+				return
+
+			end
+
+			local Mouse =
+				UIS:GetMouseLocation()
+
+			local Delta =
+				Mouse
+				- StartMouse
+
+			------------------------------------------------
+			-- SE MEXEU MAIS DE 5 PIXELS = DRAG
+			------------------------------------------------
+
+			if Delta.Magnitude
+				>= Threshold
+			then
+
+				Moved =
+					true
+
+			end
+
+			if not Moved then
+				return
+			end
+
+			local X =
+				StartButton.X
+				+ Delta.X
+
+			local Y =
+				StartButton.Y
+				+ Delta.Y
+
+			X, Y =
+				ClampToScreen(
+					Mini,
+					X,
+					Y
+				)
+
+			Mini.Position =
+				UDim2.fromOffset(
+					X,
+					Y
+				)
 
 		end
+	)
 
-		local delta =
-			input.Position
-			- MiniDragStart
+	--------------------------------------------------------
+	-- RELEASE
+	--------------------------------------------------------
 
-		if delta.Magnitude >
-			DRAG_THRESHOLD
-		then
+	UIS.InputEnded:Connect(
+		function(input)
 
-			MiniMoved = true
+			if input.UserInputType
+				~= Enum.UserInputType.MouseButton1
+			then
+
+				return
+
+			end
+
+			if not Dragging then
+				return
+			end
+
+			Dragging =
+				false
+
+			------------------------------------------------
+			-- NÃO MOVEU = FOI CLIQUE
+			------------------------------------------------
+
+			if not Moved then
+
+				RestoreUI()
+
+			end
 
 		end
+	)
 
-		if not MiniMoved then
-			return
-		end
-
-		local newX =
-			MiniStartPosition.X.Offset
-			+ delta.X
-
-		local newY =
-			MiniStartPosition.Y.Offset
-			+ delta.Y
-
-		newX, newY =
-			ClampMini(
-				newX,
-				newY
-			)
-
-		MiniHolder.Position =
-			UDim2.fromOffset(
-				newX,
-				newY
-			)
-
-	end
-)
+end
 
 ------------------------------------------------------------
--- RELEASE
+-- MINI HOVER
 ------------------------------------------------------------
 
-UIS.InputEnded:Connect(
-	function(input)
-
-		if input.UserInputType ~=
-			Enum.UserInputType.MouseButton1
-		then
-
-			return
-
-		end
-
-		if not MiniDragging then
-			return
-		end
-
-		MiniDragging = false
-
-		----------------------------------------------------
-		-- Se quase não moveu = clique.
-		-- Se moveu = NÃO abre a janela.
-		----------------------------------------------------
-
-		if not MiniMoved then
-
-			RestoreUI()
-
-		end
-
-	end
-)
-
-------------------------------------------------------------
--- MOON ANIMATION
-------------------------------------------------------------
-
-local Darker = false
-
-Moon.MouseButton1Click:Connect(
+Mini.MouseEnter:Connect(
 	function()
 
-		Darker =
-			not Darker
+		Tween(
+			Mini,
+			0.13,
+			{
+				BackgroundColor3 =
+					Color3.fromRGB(
+						18,
+						22,
+						31
+					)
+			}
+		)
 
-		if Darker then
-
-			Content.BackgroundColor3 =
-				Color3.fromRGB(
-					1,
-					4,
-					8
-				)
-
-			Sidebar.BackgroundColor3 =
-				Color3.fromRGB(
-					0,
-					3,
-					7
-				)
-
-		else
-
-			Content.BackgroundColor3 =
-				C.Background
-
-			Sidebar.BackgroundColor3 =
-				C.Sidebar
-
-		end
+		MiniStroke.Thickness =
+			2.5
 
 	end
 )
 
 ------------------------------------------------------------
--- RESPAWN SAFETY
+
+Mini.MouseLeave:Connect(
+	function()
+
+		Tween(
+			Mini,
+			0.13,
+			{
+				BackgroundColor3 =
+					Color3.fromRGB(
+						8,
+						12,
+						19
+					)
+			}
+		)
+
+		MiniStroke.Thickness =
+			2
+
+	end
+)
+
+------------------------------------------------------------
+-- MINIMIZE HOVER
+------------------------------------------------------------
+
+Minimize.MouseEnter:Connect(
+	function()
+
+		Tween(
+			Minimize,
+			0.12,
+			{
+				BackgroundColor3 =
+					COLOR.CardHover
+			}
+		)
+
+		MinimizeStroke.Color =
+			COLOR.Accent
+
+	end
+)
+
+------------------------------------------------------------
+
+Minimize.MouseLeave:Connect(
+	function()
+
+		Tween(
+			Minimize,
+			0.12,
+			{
+				BackgroundColor3 =
+					COLOR.Control
+			}
+		)
+
+		MinimizeStroke.Color =
+			COLOR.Stroke
+
+	end
+)
+
+------------------------------------------------------------
+-- RESPAWN
 ------------------------------------------------------------
 
 Player.CharacterRemoving:Connect(
@@ -3528,17 +4197,15 @@ Player.CharacterRemoving:Connect(
 
 		RemovePlatform()
 
-		UpdateElevator()
+		UpdateElevatorUI()
 
 	end
 )
 
 ------------------------------------------------------------
--- DEFAULT PAGE
+-- FINISH
 ------------------------------------------------------------
 
-SetPage(
-	"Diversos"
-)
+UpdateElevatorUI()
 
-UpdateElevator()
+UpdateAntiLagUI()
