@@ -1,56 +1,91 @@
 --[[
-==============================================================
-                    SOUZA ADMIN V11
-              MOBILE-FIRST • ÚNICO LOCALSCRIPT
-==============================================================
+================================================================
+                    SOUZA ADMIN V12
+              MOBILE FIRST • ÚNICO LOCALSCRIPT
+================================================================
+
+COLOQUE EM:
 
 StarterPlayer
     > StarterPlayerScripts
         > LocalScript
 
+---------------------------------------------------------------
 PRINCIPAL
-    • Elevador V11
-    • TP FROM
-    • DESCNY
-    • AntiLag
+---------------------------------------------------------------
+• Elevador estável
+• TP FROM
+• DESCNY
+• AntiLag
 
+---------------------------------------------------------------
 VISUAIS
-    • XRay Seguro
-    • ESP Line
-    • ESP Box
-    • Chams
-    • Categoria
+---------------------------------------------------------------
+• XRay Outline
+• ESP Line
+• ESP Box
+• Chams
+• Nome
+• Distância
+• Vida
+• Tool
+• Visibility Check
+• Team Check
 
+---------------------------------------------------------------
 DIVERSOS
-    • Remover elevador
-    • Desligar visuais
+---------------------------------------------------------------
+• Remover Elevador
+• Desligar Visuais
 
+---------------------------------------------------------------
 AJUSTES
-    • Tema
-    • Distância ESP
-    • Intensidade XRay
-    • Escala
+---------------------------------------------------------------
+• Tema
+• Max Distance ESP
+• Distância XRay
+• Tamanho da interface
 
-IMPORTANTE:
+---------------------------------------------------------------
+TEMAS
+---------------------------------------------------------------
+• Ember
+• Violet
+• Ocean
+• Crimson
+• Mono
 
-XRAY V11:
-    NÃO muda propriedades do mapa.
-    NÃO muda Transparency.
-    NÃO muda LocalTransparencyModifier.
-    NÃO muda CanCollide.
-    NÃO muda Material.
+---------------------------------------------------------------
+IMPORTANTE
+---------------------------------------------------------------
 
-    Apenas cria Highlights locais em CurrentCamera.
+ELEVADOR:
+- NÃO muda Root.CFrame
+- NÃO usa Character:PivotTo
+- NÃO zera velocidade
+- NÃO teleporta o personagem
+- Só a plataforma se move
+- Descida tem limite de velocidade
+- Se o player ficar muito longe acima da plataforma,
+  a descida pausa para evitar queda brusca
 
-ELEVADOR V11:
-    NÃO usa Root.CFrame.
-    NÃO usa Character:PivotTo.
-    NÃO altera velocity.
-    NÃO teleporta o personagem.
+XRAY:
+- NÃO muda Transparency
+- NÃO muda LocalTransparencyModifier
+- NÃO muda CanCollide
+- NÃO muda Material
+- NÃO muda Parent das Parts
+- Apenas cria Highlight local na CurrentCamera
 
-    Somente o BLOCO se move.
+ESP:
+- API oficial do Roblox
+- ScreenGui + Frame + TextLabel
+- RenderStepped
+- objetos reutilizados
+- PlayerRemoving limpa tudo
+- Visibility Check com Raycast
 
-==============================================================
+================================================================
 ]]
 
 ------------------------------------------------------------
@@ -100,11 +135,30 @@ while not Camera do
 
 end
 
+workspace:GetPropertyChangedSignal(
+	"CurrentCamera"
+):Connect(
+	function()
+
+		if workspace.CurrentCamera then
+
+			Camera =
+				workspace.CurrentCamera
+
+		end
+
+	end
+)
+
 ------------------------------------------------------------
 -- CONFIG
 ------------------------------------------------------------
 
 local CONFIG = {
+
+	--------------------------------------------------------
+	-- LOGO
+	--------------------------------------------------------
 
 	Logo =
 		"rbxthumb://type=Asset&id=98880379063768&w=420&h=420",
@@ -130,28 +184,28 @@ local CONFIG = {
 			6.5
 		),
 
-	StepHeight = 2.1,
+	StepHeight = 2.10,
 
 	MaxLevel = 25,
 
-	-- IMPORTANTE:
-	-- movimento limitado independente
-	-- de quantas vezes apertar +/-
+	UpSpeed = 4.2,
 
-	UpSpeed = 4.4,
+	DownSpeed = 2.25,
 
-	DownSpeed = 3.0,
+	-- se durante a descida o bloco ficar mais que isso
+	-- abaixo dos pés, ele espera o player.
+	MaximumDownGap = 3.15,
 
-	-- teleport/rubberband REALMENTE grande
-	RecoveryHorizontal = 35,
-
-	RecoveryVertical = 25,
+	-- só considera isso uma mudança externa grande.
+	RecoveryDistance = 45,
 
 	--------------------------------------------------------
 	-- TP FROM
 	--------------------------------------------------------
 
-	TPDistance = 32,
+	TPDistance = 30,
+
+	TPSearchAfterWall = 12,
 
 	--------------------------------------------------------
 	-- ESP
@@ -159,23 +213,23 @@ local CONFIG = {
 
 	ESPDistance = 450,
 
-	ESPUpdateRate = 1 / 20,
+	VisibilityRefreshRate = 0.12,
 
 	--------------------------------------------------------
-	-- SAFE XRAY
+	-- XRAY
 	--------------------------------------------------------
 
-	XRayMaxParts = 180,
+	XRayDistance = 180,
 
-	XRayMinimumSize = 8,
+	XRayMaxObjects = 160,
 
-	XRayFillTransparency = 0.95,
+	XRayRefreshRate = 1.0,
 
-	XRayOutlineTransparency = 0.28,
+	XRayMinimumMagnitude = 7,
 }
 
 ------------------------------------------------------------
--- FONT
+-- FONTS
 ------------------------------------------------------------
 
 local FONT_REGULAR =
@@ -246,8 +300,8 @@ local THEMES = {
 
 		CardHover =
 			Color3.fromRGB(
-				23,
-				36,
+				24,
+				37,
 				52
 			),
 
@@ -296,8 +350,8 @@ local THEMES = {
 		Accent2 =
 			Color3.fromRGB(
 				255,
-				116,
-				46
+				118,
+				49
 			),
 	},
 
@@ -647,11 +701,11 @@ local THEMES = {
 				255,
 				255
 			),
-	}
+	},
 }
 
 ------------------------------------------------------------
--- THEME
+-- THEME STATE
 ------------------------------------------------------------
 
 local ThemeOrder = {
@@ -675,7 +729,9 @@ local CurrentTheme =
 		ThemeIndex
 	]
 
-local function T()
+------------------------------------------------------------
+
+local function Theme()
 
 	return THEMES[
 		CurrentTheme
@@ -687,15 +743,13 @@ end
 -- THEME BINDINGS
 ------------------------------------------------------------
 
-local ThemeBindings =
-	{}
+local ThemeBindings = {}
 
-local ThemeRefreshCallbacks =
-	{}
+local ThemeRefreshCallbacks = {}
 
 ------------------------------------------------------------
 
-local function Bind(
+local function BindTheme(
 	Object,
 	Property,
 	Key
@@ -710,14 +764,14 @@ local function Bind(
 		}
 	)
 
-	if Object then
+	if Object
+		and Theme()[Key] ~= nil
+	then
 
 		Object[
 			Property
 		] =
-			T()[
-				Key
-			]
+			Theme()[Key]
 
 	end
 
@@ -733,115 +787,6 @@ local function RegisterThemeRefresh(
 		ThemeRefreshCallbacks,
 		Callback
 	)
-
-end
-
-------------------------------------------------------------
--- TWEEN
-------------------------------------------------------------
-
-local function Tween(
-	Object,
-	Time,
-	Properties
-)
-
-	local Value =
-		TweenService:Create(
-
-			Object,
-
-			TweenInfo.new(
-				Time,
-				Enum.EasingStyle.Quart,
-				Enum.EasingDirection.Out
-			),
-
-			Properties
-		)
-
-	Value:Play()
-
-	return Value
-
-end
-
-------------------------------------------------------------
--- APPLY THEME
-------------------------------------------------------------
-
-local function ApplyTheme(
-	Name
-)
-
-	if not THEMES[
-		Name
-	] then
-
-		return
-
-	end
-
-	CurrentTheme =
-		Name
-
-	for _,
-		Item
-		in ipairs(
-			ThemeBindings
-		)
-	do
-
-		local Object =
-			Item.Object
-
-		if Object
-			and Object.Parent
-		then
-
-			local Value =
-				T()[
-					Item.Key
-				]
-
-			if typeof(
-				Value
-			) == "Color3"
-			then
-
-				Tween(
-					Object,
-					0.18,
-					{
-						[
-							Item.Property
-						] = Value
-					}
-				)
-
-			else
-
-				Object[
-					Item.Property
-				] =
-					Value
-
-			end
-
-		end
-
-	end
-
-	for _,
-		Callback
-		in ipairs(
-			ThemeRefreshCallbacks
-		)
-	do
-
-		Callback()
-
-	end
 
 end
 
@@ -869,7 +814,6 @@ local function Corner(
 		Object
 
 	return Value
-
 end
 
 ------------------------------------------------------------
@@ -895,14 +839,118 @@ local function Stroke(
 	Value.Parent =
 		Object
 
-	Bind(
+	BindTheme(
 		Value,
 		"Color",
 		Key or "Stroke"
 	)
 
 	return Value
+end
 
+------------------------------------------------------------
+
+local function Tween(
+	Object,
+	Duration,
+	Properties
+)
+
+	local Value =
+		TweenService:Create(
+
+			Object,
+
+			TweenInfo.new(
+				Duration,
+				Enum.EasingStyle.Quart,
+				Enum.EasingDirection.Out
+			),
+
+			Properties
+		)
+
+	Value:Play()
+
+	return Value
+end
+
+------------------------------------------------------------
+-- APPLY THEME
+------------------------------------------------------------
+
+local function ApplyTheme(
+	Name
+)
+
+	if not THEMES[
+		Name
+	] then
+
+		return
+	end
+
+	CurrentTheme =
+		Name
+
+	local Data =
+		Theme()
+
+	for _,
+		Binding
+		in ipairs(
+			ThemeBindings
+		)
+	do
+
+		local Object =
+			Binding.Object
+
+		if Object
+			and Object.Parent
+		then
+
+			local Value =
+				Data[
+					Binding.Key
+				]
+
+			if typeof(Value) ==
+				"Color3"
+			then
+
+				Tween(
+					Object,
+					0.18,
+					{
+						[
+							Binding.Property
+						] =
+							Value
+					}
+				)
+
+			elseif Value ~= nil then
+
+				Object[
+					Binding.Property
+				] =
+					Value
+			end
+		end
+	end
+
+	for _,
+		Callback
+		in ipairs(
+			ThemeRefreshCallbacks
+		)
+	do
+
+		pcall(
+			Callback
+		)
+	end
 end
 
 ------------------------------------------------------------
@@ -913,52 +961,35 @@ for _,
 	Name
 	in ipairs({
 
-		"SouzaAdminV11",
+		"SouzaAdminV12",
 
-		"SouzaESP_V11"
+		"SouzaVisualV12",
 
 	})
 do
 
-	local Existing =
+	local Object =
 		PlayerGui:FindFirstChild(
 			Name
 		)
 
-	if Existing then
+	if Object then
 
-		Existing:Destroy()
+		Object:Destroy()
 
 	end
-
 end
 
 ------------------------------------------------------------
--- OLD PLATFORM
-------------------------------------------------------------
 
-for _,
-	Name
-	in ipairs({
+local OldPlatform =
+	workspace:FindFirstChild(
+		"SouzaElevatorV12"
+	)
 
-		"SouzaElevatorV11",
+if OldPlatform then
 
-		"SouzaAdminPlatform_"
-		.. Player.UserId
-
-	})
-do
-
-	local Existing =
-		workspace:FindFirstChild(
-			Name
-		)
-
-	if Existing then
-
-		Existing:Destroy()
-
-	end
+	OldPlatform:Destroy()
 
 end
 
@@ -1010,7 +1041,7 @@ Player.CharacterAdded:Connect(
 	function(Char)
 
 		task.wait(
-			0.15
+			0.12
 		)
 
 		SetupCharacter(
@@ -1022,30 +1053,24 @@ Player.CharacterAdded:Connect(
 
 ------------------------------------------------------------
 -- ========================================================
--- ELEVATOR V11
+-- ELEVATOR V12
 -- ========================================================
 ------------------------------------------------------------
 
-local Platform =
-	nil
+local Platform = nil
 
-local ElevatorLevel =
-	0
+local ElevatorLevel = 0
 
-local ElevatorBaseY =
-	nil
+local ElevatorBaseY = nil
 
-local ElevatorY =
-	nil
+local ElevatorCurrentY = nil
 
-local ElevatorTargetY =
-	nil
+local ElevatorTargetY = nil
 
-local LastRootPosition =
-	nil
+local LastElevatorRootPosition = nil
 
 ------------------------------------------------------------
--- FEET Y
+-- FEET
 ------------------------------------------------------------
 
 local function GetFeetY()
@@ -1055,19 +1080,15 @@ local function GetFeetY()
 	then
 
 		return nil
-
 	end
 
 	return Root.Position.Y
-
 		- Humanoid.HipHeight
-
 		- Root.Size.Y / 2
-
 end
 
 ------------------------------------------------------------
--- PLATFORM GUI
+-- PLATFORM DESIGN
 ------------------------------------------------------------
 
 local function CreatePlatformDesign(
@@ -1113,7 +1134,7 @@ local function CreatePlatformDesign(
 	BG.Parent =
 		Surface
 
-	Bind(
+	BindTheme(
 		BG,
 		"BackgroundColor3",
 		"BG2"
@@ -1132,33 +1153,36 @@ local function CreatePlatformDesign(
 	Gradient.Parent =
 		BG
 
-	local function RefreshGradient()
+	local function Refresh()
+
+		local T =
+			Theme()
 
 		Gradient.Color =
 			ColorSequence.new({
 
 				ColorSequenceKeypoint.new(
 					0,
-					T().Accent
+					T.Accent
 				),
 
 				ColorSequenceKeypoint.new(
 					0.35,
-					T().BG2
+					T.BG2
 				),
 
 				ColorSequenceKeypoint.new(
 					1,
-					T().BG
-				)
-			})
+					T.BG
+				),
 
+			})
 	end
 
-	RefreshGradient()
+	Refresh()
 
 	RegisterThemeRefresh(
-		RefreshGradient
+		Refresh
 	)
 
 	--------------------------------------------------------
@@ -1193,7 +1217,7 @@ local function CreatePlatformDesign(
 		true
 
 	Fallback.TextTransparency =
-		0.7
+		0.72
 
 	Fallback.FontFace =
 		FONT_BOLD
@@ -1201,7 +1225,7 @@ local function CreatePlatformDesign(
 	Fallback.Parent =
 		BG
 
-	Bind(
+	BindTheme(
 		Fallback,
 		"TextColor3",
 		"Accent"
@@ -1228,8 +1252,8 @@ local function CreatePlatformDesign(
 
 	Logo.Size =
 		UDim2.fromScale(
-			0.58,
-			0.58
+			0.57,
+			0.57
 		)
 
 	Logo.BackgroundTransparency =
@@ -1243,11 +1267,10 @@ local function CreatePlatformDesign(
 
 	Logo.Parent =
 		BG
-
 end
 
 ------------------------------------------------------------
--- CREATE
+-- CREATE ELEVATOR
 ------------------------------------------------------------
 
 local function CreateElevator()
@@ -1257,18 +1280,19 @@ local function CreateElevator()
 	then
 
 		return
+	end
 
+	if not Root then
+
+		return
 	end
 
 	local Feet =
 		GetFeetY()
 
-	if not Feet
-		or not Root
-	then
+	if not Feet then
 
 		return
-
 	end
 
 	ElevatorLevel =
@@ -1276,18 +1300,16 @@ local function CreateElevator()
 
 	ElevatorBaseY =
 		Feet
-
 		- CONFIG.PlatformSize.Y / 2
+		- 0.05
 
-		- 0.04
-
-	ElevatorY =
+	ElevatorCurrentY =
 		ElevatorBaseY
 
 	ElevatorTargetY =
 		ElevatorBaseY
 
-	LastRootPosition =
+	LastElevatorRootPosition =
 		Root.Position
 
 	--------------------------------------------------------
@@ -1298,7 +1320,7 @@ local function CreateElevator()
 		)
 
 	Platform.Name =
-		"SouzaElevatorV11"
+		"SouzaElevatorV12"
 
 	Platform.Size =
 		CONFIG.PlatformSize
@@ -1339,7 +1361,7 @@ local function CreateElevator()
 
 			Root.Position.X,
 
-			ElevatorY,
+			ElevatorCurrentY,
 
 			Root.Position.Z
 
@@ -1351,11 +1373,10 @@ local function CreateElevator()
 	CreatePlatformDesign(
 		Platform
 	)
-
 end
 
 ------------------------------------------------------------
--- REMOVE
+-- REMOVE ELEVATOR
 ------------------------------------------------------------
 
 local function RemoveElevator()
@@ -1366,13 +1387,13 @@ local function RemoveElevator()
 	ElevatorBaseY =
 		nil
 
-	ElevatorY =
+	ElevatorCurrentY =
 		nil
 
 	ElevatorTargetY =
 		nil
 
-	LastRootPosition =
+	LastElevatorRootPosition =
 		nil
 
 	if Platform then
@@ -1381,13 +1402,11 @@ local function RemoveElevator()
 
 		Platform =
 			nil
-
 	end
-
 end
 
 ------------------------------------------------------------
--- REBASE
+-- ELEVATOR REBASE
 ------------------------------------------------------------
 
 local function RebaseElevator()
@@ -1397,7 +1416,6 @@ local function RebaseElevator()
 	then
 
 		return
-
 	end
 
 	local Feet =
@@ -1406,43 +1424,42 @@ local function RebaseElevator()
 	if not Feet then
 
 		return
-
 	end
 
 	local Offset =
 		math.max(
+
 			ElevatorLevel - 1,
+
 			0
+
 		)
 
 		* CONFIG.StepHeight
 
 	--------------------------------------------------------
-	-- mantém o número do nível
-	-- mas aceita a nova posição do jogo
+	-- mantém nível lógico
+	-- mas aceita a posição nova do personagem
 	--------------------------------------------------------
 
-	ElevatorY =
+	ElevatorCurrentY =
 		Feet
-
-		- CONFIG.PlatformSize.Y / 2
-
-		- 0.04
+		- Platform.Size.Y / 2
+		- 0.05
 
 	ElevatorBaseY =
-		ElevatorY
+		ElevatorCurrentY
 		- Offset
 
 	ElevatorTargetY =
-		ElevatorY
+		ElevatorCurrentY
 
-	LastRootPosition =
+	LastElevatorRootPosition =
 		Root.Position
-
 end
 
 ------------------------------------------------------------
--- LEVEL CHANGE
+-- CHANGE LEVEL
 ------------------------------------------------------------
 
 local function ChangeElevatorLevel(
@@ -1455,7 +1472,6 @@ local function ChangeElevatorLevel(
 
 		return false,
 			"Personagem indisponível"
-
 	end
 
 	--------------------------------------------------------
@@ -1468,14 +1484,12 @@ local function ChangeElevatorLevel(
 
 			return false,
 				"Desativado"
-
 		end
 
 		CreateElevator()
 
 		return true,
 			"Nível 1"
-
 	end
 
 	--------------------------------------------------------
@@ -1490,7 +1504,6 @@ local function ChangeElevatorLevel(
 
 		return true,
 			"Desativado"
-
 	end
 
 	NewLevel =
@@ -1504,13 +1517,22 @@ local function ChangeElevatorLevel(
 
 		)
 
-	ElevatorLevel =
-		NewLevel
+	if NewLevel ==
+		ElevatorLevel
+	then
+
+		return false,
+			"Limite"
+	end
 
 	--------------------------------------------------------
-	-- Só troca destino.
-	-- NÃO move player.
+	-- IMPORTANTE:
+	-- apertar várias vezes só troca o alvo.
+	-- não multiplica velocidade.
 	--------------------------------------------------------
+
+	ElevatorLevel =
+		NewLevel
 
 	ElevatorTargetY =
 		ElevatorBaseY
@@ -1524,7 +1546,6 @@ local function ChangeElevatorLevel(
 	return true,
 		"Nível "
 		.. ElevatorLevel
-
 end
 
 ------------------------------------------------------------
@@ -1543,72 +1564,47 @@ RunService.Heartbeat:Connect(
 		then
 
 			return
-
 		end
 
 		local Position =
 			Root.Position
 
 		----------------------------------------------------
-		-- LARGE SERVER/GAME MOVEMENT
+		-- PLAYER FOI REALMENTE MOVIDO PRA LONGE
 		----------------------------------------------------
 
-		if LastRootPosition then
+		if LastElevatorRootPosition then
 
-			local Delta =
-				Position
-				- LastRootPosition
-
-			local Horizontal =
-				Vector2.new(
-
-					Delta.X,
-
-					Delta.Z
-
+			local ExternalDifference =
+				(
+					Position
+					- LastElevatorRootPosition
 				).Magnitude
 
-			local Vertical =
-				math.abs(
-					Delta.Y
-				)
-
-			if Horizontal >
-				CONFIG.RecoveryHorizontal
-
-				or
-
-				Vertical >
-				CONFIG.RecoveryVertical
+			if ExternalDifference >
+				CONFIG.RecoveryDistance
 			then
-
-				------------------------------------------------
-				-- NÃO TELEPORTA PLAYER.
-				-- bloco aceita a nova posição.
-				------------------------------------------------
 
 				RebaseElevator()
 
 				return
-
 			end
-
 		end
 
-		LastRootPosition =
+		LastElevatorRootPosition =
 			Position
 
 		----------------------------------------------------
-		-- MOVE Y WITH HARD SPEED LIMIT
+		-- Y TARGET
 		----------------------------------------------------
 
-		if ElevatorTargetY
-			and ElevatorY
+		if ElevatorCurrentY
+			and ElevatorTargetY
 		then
 
 			local Difference =
 				ElevatorTargetY
-				- ElevatorY
+				- ElevatorCurrentY
 
 			if math.abs(
 				Difference
@@ -1617,50 +1613,85 @@ RunService.Heartbeat:Connect(
 
 				local Speed
 
+				------------------------------------------------
+				-- SUBINDO
+				------------------------------------------------
+
 				if Difference > 0 then
 
 					Speed =
 						CONFIG.UpSpeed
 
+				------------------------------------------------
+				-- DESCENDO
+				------------------------------------------------
+
 				else
 
-					-- descida mais devagar
-					-- justamente para não matar
 					Speed =
 						CONFIG.DownSpeed
 
+					------------------------------------------------
+					-- ANTI QUEDA:
+					-- se o player estiver muito acima do bloco,
+					-- espera ele encostar/cair de volta.
+					------------------------------------------------
+
+					local PlatformTop =
+						ElevatorCurrentY
+						+ Platform.Size.Y / 2
+
+					local Feet =
+						GetFeetY()
+
+					if Feet then
+
+						local Gap =
+							Feet
+							- PlatformTop
+
+						if Gap >
+							CONFIG.MaximumDownGap
+						then
+
+							Speed =
+								0
+						end
+					end
 				end
 
-				local MaxStep =
-					Speed
-					* DT
+				------------------------------------------------
 
-				if math.abs(
-					Difference
-				) <= MaxStep
-				then
+				if Speed > 0 then
 
-					ElevatorY =
-						ElevatorTargetY
+					local Step =
+						Speed
+						* DT
 
-				else
+					if math.abs(
+						Difference
+					) <= Step
+					then
 
-					ElevatorY +=
+						ElevatorCurrentY =
+							ElevatorTargetY
 
-						math.sign(
-							Difference
-						)
+					else
 
-						* MaxStep
+						ElevatorCurrentY +=
 
+							math.sign(
+								Difference
+							)
+
+							* Step
+					end
 				end
-
 			end
-
 		end
 
 		----------------------------------------------------
-		-- APPLY ONLY TO PLATFORM
+		-- SOMENTE PLATFORM.CFRAME
 		----------------------------------------------------
 
 		Platform.CFrame =
@@ -1668,12 +1699,11 @@ RunService.Heartbeat:Connect(
 
 				Position.X,
 
-				ElevatorY,
+				ElevatorCurrentY,
 
 				Position.Z
 
 			)
-
 	end
 )
 
@@ -1683,7 +1713,7 @@ RunService.Heartbeat:Connect(
 -- ========================================================
 ------------------------------------------------------------
 
-local InvisibleKeywords = {
+local InvisKeywords = {
 
 	"invis",
 
@@ -1699,7 +1729,7 @@ local InvisibleKeywords = {
 
 	"ghost",
 
-	"vanish"
+	"vanish",
 }
 
 ------------------------------------------------------------
@@ -1713,7 +1743,6 @@ local function IsInvisibleTool(
 	) then
 
 		return false
-
 	end
 
 	if Object:GetAttribute(
@@ -1734,24 +1763,21 @@ local function IsInvisibleTool(
 	then
 
 		return true
-
 	end
 
 	local Search =
 		string.lower(
 
 			Object.Name
-
 			.. " "
-
 			.. Object.ToolTip
 
 		)
 
 	for _,
-		Keyword
+		Word
 		in ipairs(
-			InvisibleKeywords
+			InvisKeywords
 		)
 	do
 
@@ -1759,7 +1785,7 @@ local function IsInvisibleTool(
 
 			Search,
 
-			Keyword,
+			Word,
 
 			1,
 
@@ -1768,13 +1794,10 @@ local function IsInvisibleTool(
 		) then
 
 			return true
-
 		end
-
 	end
 
 	return false
-
 end
 
 ------------------------------------------------------------
@@ -1795,14 +1818,9 @@ local function FindInvisibleTool()
 			) then
 
 				return Object
-
 			end
-
 		end
-
 	end
-
-	--------------------------------------------------------
 
 	local Backpack =
 		Player:FindFirstChildOfClass(
@@ -1823,15 +1841,11 @@ local function FindInvisibleTool()
 			) then
 
 				return Object
-
 			end
-
 		end
-
 	end
 
 	return nil
-
 end
 
 ------------------------------------------------------------
@@ -1842,7 +1856,6 @@ local function ActivateDescny()
 
 		return false,
 			"Personagem indisponível"
-
 	end
 
 	local Tool =
@@ -1852,7 +1865,6 @@ local function ActivateDescny()
 
 		return false,
 			"Item não encontrado"
-
 	end
 
 	if Tool.Parent ~=
@@ -1865,14 +1877,12 @@ local function ActivateDescny()
 				Humanoid:EquipTool(
 					Tool
 				)
-
 			end
 		)
 
 		task.wait(
-			0.1
+			0.10
 		)
-
 	end
 
 	local Success =
@@ -1884,16 +1894,19 @@ local function ActivateDescny()
 			end
 		)
 
-	return Success,
-		Success
-			and Tool.Name
-			or "Falha ao ativar"
+	if Success then
 
+		return true,
+			Tool.Name
+	end
+
+	return false,
+		"Falha ao ativar"
 end
 
 ------------------------------------------------------------
 -- ========================================================
--- TP FROM
+-- TP FROM V12
 -- ========================================================
 ------------------------------------------------------------
 
@@ -1901,7 +1914,7 @@ local TPBusy =
 	false
 
 ------------------------------------------------------------
--- SAFE DESTINATION
+-- CHECK DESTINATION
 ------------------------------------------------------------
 
 local function TPPositionClear(
@@ -1912,28 +1925,27 @@ local function TPPositionClear(
 	if not Character then
 
 		return false
-
 	end
 
 	local _,
-		CharSize =
+		Size =
 		Character:GetBoundingBox()
 
 	local CheckSize =
 		Vector3.new(
 
 			math.max(
-				CharSize.X * 0.6,
+				Size.X * 0.58,
 				2
 			),
 
 			math.max(
-				CharSize.Y * 0.7,
+				Size.Y * 0.68,
 				3
 			),
 
 			math.max(
-				CharSize.Z * 0.6,
+				Size.Z * 0.58,
 				2
 			)
 
@@ -1949,7 +1961,7 @@ local function TPPositionClear(
 
 		Character,
 
-		Wall
+		Wall,
 	}
 
 	if Platform then
@@ -1958,11 +1970,12 @@ local function TPPositionClear(
 			Ignore,
 			Platform
 		)
-
 	end
 
 	Params.FilterDescendantsInstances =
 		Ignore
+
+	--------------------------------------------------------
 
 	local Parts =
 		workspace:GetPartBoundsInBox(
@@ -1974,7 +1987,6 @@ local function TPPositionClear(
 			CheckSize,
 
 			Params
-
 		)
 
 	for _,
@@ -1991,140 +2003,175 @@ local function TPPositionClear(
 		then
 
 			return false
-
 		end
-
 	end
 
 	return true
-
 end
 
 ------------------------------------------------------------
--- FIND FAR FACE
+-- FAR FACE OF PART
 ------------------------------------------------------------
 
-local function WallExitPoint(
+local function CalculateWallExit(
 	Part,
-	Hit,
-	Direction
+	HitPosition,
+	WorldDirection
 )
 
-	local LocalHit =
+	WorldDirection =
+		WorldDirection.Unit
+
+	local LocalOrigin =
 		Part.CFrame:PointToObjectSpace(
 
-			Hit
+			HitPosition
 
-			+ Direction
-			* 0.05
+			+ WorldDirection
+			* 0.04
 
 		)
 
 	local LocalDirection =
 		Part.CFrame:VectorToObjectSpace(
-			Direction
+			WorldDirection
 		)
 
 	local Half =
 		Part.Size / 2
 
-	local TMax =
-		math.huge
-
+	--------------------------------------------------------
+	-- ray-box slab intersection
 	--------------------------------------------------------
 
-	local function Check(
-		Origin,
-		Dir,
-		HalfSize
+	local Tmin =
+		-math.huge
+
+	local Tmax =
+		math.huge
+
+	local function Axis(
+		O,
+		D,
+		H
 	)
 
-		if math.abs(
-			Dir
-		) < 0.00001
+		if math.abs(D) <
+			0.00001
 		then
 
-			return
+			if O < -H
+				or O > H
+			then
 
+				return false
+			end
+
+			return true
 		end
 
-		local Boundary
-
-		if Dir > 0 then
-
-			Boundary =
-				HalfSize
-
-		else
-
-			Boundary =
-				-HalfSize
-
-		end
-
-		local T =
+		local A =
 			(
-				Boundary
-				- Origin
+				-H - O
+			)
+			/ D
+
+		local B =
+			(
+				H - O
+			)
+			/ D
+
+		if A > B then
+
+			A,
+				B =
+				B,
+				A
+		end
+
+		Tmin =
+			math.max(
+				Tmin,
+				A
 			)
 
-			/ Dir
+		Tmax =
+			math.min(
+				Tmax,
+				B
+			)
 
-		if T > 0
-			and T < TMax
-		then
-
-			TMax =
-				T
-
-		end
-
+		return Tmin <=
+			Tmax
 	end
 
 	--------------------------------------------------------
 
-	Check(
-		LocalHit.X,
+	if not Axis(
+
+		LocalOrigin.X,
+
 		LocalDirection.X,
+
 		Half.X
-	)
 
-	Check(
-		LocalHit.Y,
+	) then
+
+		return nil
+	end
+
+	if not Axis(
+
+		LocalOrigin.Y,
+
 		LocalDirection.Y,
+
 		Half.Y
-	)
 
-	Check(
-		LocalHit.Z,
+	) then
+
+		return nil
+	end
+
+	if not Axis(
+
+		LocalOrigin.Z,
+
 		LocalDirection.Z,
+
 		Half.Z
-	)
 
-	--------------------------------------------------------
+	) then
 
-	if TMax ==
-		math.huge
+		return nil
+	end
+
+	if Tmax < 0
+		or Tmax ==
+			math.huge
 	then
 
 		return nil
-
 	end
 
 	local LocalExit =
-		LocalHit
+		LocalOrigin
 
 		+ LocalDirection
-		* TMax
+
+		* (
+			Tmax
+			+ 0.04
+		)
 
 	return Part.CFrame:PointToWorldSpace(
 		LocalExit
 	)
-
 end
 
 ------------------------------------------------------------
--- TP
+-- TP FROM
 ------------------------------------------------------------
 
 local function TPFrom()
@@ -2133,23 +2180,22 @@ local function TPFrom()
 
 		return false,
 			"Aguarde"
-
 	end
 
-	if not Character
-		or not Root
+	if not Root
+		or not Character
+		or not Humanoid
 	then
 
 		return false,
 			"Personagem indisponível"
-
 	end
 
 	TPBusy =
 		true
 
 	--------------------------------------------------------
-	-- DIRECTION
+	-- HORIZONTAL CAMERA DIRECTION
 	--------------------------------------------------------
 
 	local Look =
@@ -2180,14 +2226,24 @@ local function TPFrom()
 				Root.CFrame.LookVector.Z
 
 			)
+	end
 
+	if Direction.Magnitude <
+		0.01
+	then
+
+		TPBusy =
+			false
+
+		return false,
+			"Direção inválida"
 	end
 
 	Direction =
 		Direction.Unit
 
 	--------------------------------------------------------
-	-- RAY
+	-- RAYCAST
 	--------------------------------------------------------
 
 	local Params =
@@ -2207,7 +2263,6 @@ local function TPFrom()
 			Ignore,
 			Platform
 		)
-
 	end
 
 	Params.FilterDescendantsInstances =
@@ -2218,21 +2273,23 @@ local function TPFrom()
 
 	--------------------------------------------------------
 
+	local Origin =
+		Root.Position
+		+ Vector3.new(
+			0,
+			0.4,
+			0
+		)
+
 	local Result =
 		workspace:Raycast(
 
-			Root.Position
-			+ Vector3.new(
-				0,
-				0.5,
-				0
-			),
+			Origin,
 
 			Direction
 			* CONFIG.TPDistance,
 
 			Params
-
 		)
 
 	if not Result then
@@ -2241,8 +2298,7 @@ local function TPFrom()
 			false
 
 		return false,
-			"Sem parede"
-
+			"Sem parede na frente"
 	end
 
 	local Wall =
@@ -2257,11 +2313,10 @@ local function TPFrom()
 
 		return false,
 			"Objeto incompatível"
-
 	end
 
 	--------------------------------------------------------
-	-- FLOOR/TOP
+	-- NÃO ACEITA CHÃO / TETO
 	--------------------------------------------------------
 
 	if math.abs(
@@ -2273,16 +2328,15 @@ local function TPFrom()
 			false
 
 		return false,
-			"Aponte para parede"
-
+			"Aponte para uma parede"
 	end
 
 	--------------------------------------------------------
-	-- OTHER SIDE
+	-- OUTRO LADO
 	--------------------------------------------------------
 
 	local Exit =
-		WallExitPoint(
+		CalculateWallExit(
 
 			Wall,
 
@@ -2298,12 +2352,11 @@ local function TPFrom()
 			false
 
 		return false,
-			"Saída não encontrada"
-
+			"Não achei o outro lado"
 	end
 
 	--------------------------------------------------------
-	-- FIND CLEAR SPACE
+	-- SEARCH FREE POSITION
 	--------------------------------------------------------
 
 	local Destination =
@@ -2311,7 +2364,7 @@ local function TPFrom()
 
 	for Distance =
 		2.5,
-		10,
+		CONFIG.TPSearchAfterWall,
 		0.5
 	do
 
@@ -2333,20 +2386,19 @@ local function TPFrom()
 			)
 
 		if TPPositionClear(
+
 			Candidate,
+
 			Wall
+
 		) then
 
 			Destination =
 				Candidate
 
 			break
-
 		end
-
 	end
-
-	--------------------------------------------------------
 
 	if not Destination then
 
@@ -2354,12 +2406,13 @@ local function TPFrom()
 			false
 
 		return false,
-			"Sem espaço do outro lado"
-
+			"Sem espaço livre do outro lado"
 	end
 
 	--------------------------------------------------------
-	-- SINGLE PIVOT ONLY
+	-- ONE TELEPORT
+	--
+	-- não fica brigando repetidamente com servidor.
 	--------------------------------------------------------
 
 	Character:PivotTo(
@@ -2376,7 +2429,7 @@ local function TPFrom()
 	)
 
 	--------------------------------------------------------
-	-- elevator accepts new position
+	-- platform follows destination
 	--------------------------------------------------------
 
 	if Platform then
@@ -2384,7 +2437,6 @@ local function TPFrom()
 		task.defer(
 			RebaseElevator
 		)
-
 	end
 
 	TPBusy =
@@ -2393,7 +2445,6 @@ local function TPFrom()
 	return true,
 		"Atravessou "
 		.. Wall.Name
-
 end
 
 ------------------------------------------------------------
@@ -2405,12 +2456,14 @@ end
 local AntiLagLevel =
 	0
 
-local AntiCache =
+local AntiLagCache =
 	{}
 
-local AntiGeneration =
+local AntiLagGeneration =
 	0
 
+------------------------------------------------------------
+-- CACHE PROPERTY
 ------------------------------------------------------------
 
 local function CacheProperty(
@@ -2418,24 +2471,22 @@ local function CacheProperty(
 	Property
 )
 
-	if not AntiCache[
+	if not AntiLagCache[
 		Object
 	] then
 
-		AntiCache[
+		AntiLagCache[
 			Object
 		] =
 			{}
-
 	end
 
-	if AntiCache[
+	if AntiLagCache[
 		Object
 	][Property] ~= nil
 	then
 
 		return
-
 	end
 
 	local Success,
@@ -2446,24 +2497,21 @@ local function CacheProperty(
 				return Object[
 					Property
 				]
-
 			end
 		)
 
 	if Success then
 
-		AntiCache[
+		AntiLagCache[
 			Object
 		][Property] =
 			Value
-
 	end
-
 end
 
 ------------------------------------------------------------
 
-local function ChangeProperty(
+local function AntiSet(
 	Object,
 	Property,
 	Value
@@ -2484,20 +2532,21 @@ local function ChangeProperty(
 
 		end
 	)
-
 end
 
+------------------------------------------------------------
+-- RESTORE
 ------------------------------------------------------------
 
 local function RestoreAntiLag()
 
-	AntiGeneration +=
+	AntiLagGeneration +=
 		1
 
 	for Object,
 		Properties
 		in pairs(
-			AntiCache
+			AntiLagCache
 		)
 	do
 
@@ -2520,24 +2569,26 @@ local function RestoreAntiLag()
 
 					end
 				)
-
 			end
-
 		end
-
 	end
 
-	AntiCache =
+	AntiLagCache =
 		{}
-
 end
 
+------------------------------------------------------------
+-- OPTIMIZE OBJECT
 ------------------------------------------------------------
 
 local function OptimizeObject(
 	Object,
 	Level
 )
+
+	--------------------------------------------------------
+	-- LEVE
+	--------------------------------------------------------
 
 	if Level >= 1 then
 
@@ -2558,16 +2609,16 @@ local function OptimizeObject(
 			)
 		then
 
-			ChangeProperty(
+			AntiSet(
 				Object,
 				"Enabled",
 				false
 			)
-
 		end
-
 	end
 
+	--------------------------------------------------------
+	-- MEDIO
 	--------------------------------------------------------
 
 	if Level >= 2 then
@@ -2597,37 +2648,34 @@ local function OptimizeObject(
 			)
 		then
 
-			ChangeProperty(
+			AntiSet(
 				Object,
 				"Enabled",
 				false
 			)
-
 		end
-
 	end
 
 	--------------------------------------------------------
+	-- MAX
+	--------------------------------------------------------
 
-	if Level >= 3 then
-
-		if Object:IsA(
+	if Level >= 3
+		and Object:IsA(
 			"BasePart"
 		)
-		then
+	then
 
-			ChangeProperty(
-				Object,
-				"CastShadow",
-				false
-			)
-
-		end
-
+		AntiSet(
+			Object,
+			"CastShadow",
+			false
+		)
 	end
-
 end
 
+------------------------------------------------------------
+-- SET ANTILAG
 ------------------------------------------------------------
 
 local function SetAntiLag(
@@ -2642,14 +2690,13 @@ local function SetAntiLag(
 	if Level <= 0 then
 
 		return
-
 	end
 
-	AntiGeneration +=
+	AntiLagGeneration +=
 		1
 
 	local Generation =
-		AntiGeneration
+		AntiLagGeneration
 
 	task.spawn(
 		function()
@@ -2665,11 +2712,10 @@ local function SetAntiLag(
 			do
 
 				if Generation ~=
-					AntiGeneration
+					AntiLagGeneration
 				then
 
 					return
-
 				end
 
 				OptimizeObject(
@@ -2682,9 +2728,7 @@ local function SetAntiLag(
 				then
 
 					RunService.Heartbeat:Wait()
-
 				end
-
 			end
 
 			for _,
@@ -2698,658 +2742,429 @@ local function SetAntiLag(
 					Object,
 					Level
 				)
-
 			end
-
 		end
 	)
-
 end
 
 ------------------------------------------------------------
 -- ========================================================
--- SAFE XRAY V11
---
--- ZERO MAP PROPERTY MODIFICATION
+-- VISUAL ENGINE
 -- ========================================================
 ------------------------------------------------------------
 
-local XRayEnabled =
-	false
+local VISUAL = {
 
-local XRayHighlights =
-	{}
+	Box = false,
 
-local XRayCount =
-	0
+	Line = false,
 
-------------------------------------------------------------
--- CHARACTER OBJECT?
-------------------------------------------------------------
+	Chams = false,
 
-local function IsCharacterObject(
-	Object
-)
+	Name = false,
 
-	local Model =
-		Object:FindFirstAncestorOfClass(
-			"Model"
-		)
+	Distance = false,
 
-	if Model
-		and Model:FindFirstChildOfClass(
-			"Humanoid"
-		)
-	then
+	Health = false,
 
-		return true
+	Tool = false,
 
-	end
+	VisibilityCheck = true,
 
-	return false
+	TeamCheck = false,
 
-end
+	XRay = false,
+}
 
 ------------------------------------------------------------
--- XRAY CANDIDATE
+-- VISUAL GUI
 ------------------------------------------------------------
 
-local function IsSafeXRayCandidate(
-	Part
-)
-
-	if not Part:IsA(
-		"BasePart"
-	) then
-
-		return false
-
-	end
-
-	if not Part.Anchored then
-
-		return false
-
-	end
-
-	if Platform
-		and Part ==
-			Platform
-	then
-
-		return false
-
-	end
-
-	if IsCharacterObject(
-		Part
-	) then
-
-		return false
-
-	end
-
-	if Part:GetAttribute(
-		"NoXRay"
-	) == true
-	then
-
-		return false
-
-	end
-
-	--------------------------------------------------------
-	-- evita criar highlight pra detalhezinho pequeno
-	-- isso deixa mobile muito mais leve
-	--------------------------------------------------------
-
-	if Part.Size.Magnitude <
-		CONFIG.XRayMinimumSize
-	then
-
-		return false
-
-	end
-
-	return true
-
-end
-
-------------------------------------------------------------
--- ADD HIGHLIGHT
-------------------------------------------------------------
-
-local function AddXRayHighlight(
-	Part
-)
-
-	if not XRayEnabled then
-
-		return
-
-	end
-
-	if XRayHighlights[
-		Part
-	] then
-
-		return
-
-	end
-
-	if XRayCount >=
-		CONFIG.XRayMaxParts
-	then
-
-		return
-
-	end
-
-	if not IsSafeXRayCandidate(
-		Part
-	) then
-
-		return
-
-	end
-
-	--------------------------------------------------------
-	-- IMPORTANT:
-	-- Highlight fica dentro da CAMERA.
-	-- NÃO vira filho do mapa.
-	--------------------------------------------------------
-
-	local Highlight =
-		Instance.new(
-			"Highlight"
-		)
-
-	Highlight.Name =
-		"SouzaSafeXRay"
-
-	Highlight.Adornee =
-		Part
-
-	Highlight.DepthMode =
-		Enum.HighlightDepthMode.AlwaysOnTop
-
-	Highlight.FillTransparency =
-		CONFIG.XRayFillTransparency
-
-	Highlight.OutlineTransparency =
-		CONFIG.XRayOutlineTransparency
-
-	Highlight.FillColor =
-		T().Accent
-
-	Highlight.OutlineColor =
-		T().Accent2
-
-	Highlight.Parent =
-		Camera
-
-	XRayHighlights[
-		Part
-	] =
-		Highlight
-
-	XRayCount +=
-		1
-
-end
-
-------------------------------------------------------------
--- ENABLE
-------------------------------------------------------------
-
-local function EnableSafeXRay()
-
-	if XRayEnabled then
-
-		return
-
-	end
-
-	XRayEnabled =
-		true
-
-	XRayCount =
-		0
-
-	task.spawn(
-		function()
-
-			local Objects =
-				workspace:GetDescendants()
-
-			for Index,
-				Object
-				in ipairs(
-					Objects
-				)
-			do
-
-				if not XRayEnabled then
-
-					return
-
-				end
-
-				if Object:IsA(
-					"BasePart"
-				) then
-
-					AddXRayHighlight(
-						Object
-					)
-
-				end
-
-				if XRayCount >=
-					CONFIG.XRayMaxParts
-				then
-
-					break
-
-				end
-
-				if Index % 120 ==
-					0
-				then
-
-					RunService.Heartbeat:Wait()
-
-				end
-
-			end
-
-		end
-	)
-
-end
-
-------------------------------------------------------------
--- DISABLE
-------------------------------------------------------------
-
-local function DisableSafeXRay()
-
-	XRayEnabled =
-		false
-
-	for _,
-		Highlight
-		in pairs(
-			XRayHighlights
-		)
-	do
-
-		if Highlight then
-
-			Highlight:Destroy()
-
-		end
-
-	end
-
-	XRayHighlights =
-		{}
-
-	XRayCount =
-		0
-
-end
-
-------------------------------------------------------------
--- REFRESH COLORS
-------------------------------------------------------------
-
-local function RefreshSafeXRay()
-
-	if not XRayEnabled then
-
-		return
-
-	end
-
-	for _,
-		Highlight
-		in pairs(
-			XRayHighlights
-		)
-	do
-
-		if Highlight
-			and Highlight.Parent
-		then
-
-			Highlight.FillColor =
-				T().Accent
-
-			Highlight.OutlineColor =
-				T().Accent2
-
-			Highlight.FillTransparency =
-				CONFIG.XRayFillTransparency
-
-			Highlight.OutlineTransparency =
-				CONFIG.XRayOutlineTransparency
-
-		end
-
-	end
-
-end
-
-RegisterThemeRefresh(
-	RefreshSafeXRay
-)
-
-------------------------------------------------------------
--- ========================================================
--- ESP
--- ========================================================
-------------------------------------------------------------
-
-local ESPLine =
-	false
-
-local ESPBox =
-	false
-
-local ESPChams =
-	false
-
-local ESPFilter =
-	"Todos"
-
-------------------------------------------------------------
--- ESP GUI
-------------------------------------------------------------
-
-local ESPGui =
+local VisualGui =
 	Instance.new(
 		"ScreenGui"
 	)
 
-ESPGui.Name =
-	"SouzaESP_V11"
+VisualGui.Name =
+	"SouzaVisualV12"
 
-ESPGui.ResetOnSpawn =
+VisualGui.ResetOnSpawn =
 	false
 
-ESPGui.IgnoreGuiInset =
+VisualGui.IgnoreGuiInset =
 	true
 
-ESPGui.DisplayOrder =
+VisualGui.DisplayOrder =
 	998
 
-ESPGui.Parent =
+VisualGui.ZIndexBehavior =
+	Enum.ZIndexBehavior.Sibling
+
+VisualGui.Parent =
 	PlayerGui
 
 ------------------------------------------------------------
-
-local ESPObjects =
-	{}
-
-------------------------------------------------------------
--- FILTER
+-- ESP CACHE
 ------------------------------------------------------------
 
-local function ShouldShowPlayer(
-	Target
-)
+local ESPCache = {}
 
-	if Target ==
-		Player
-	then
+local VisibilityCache = {}
 
-		return false
+------------------------------------------------------------
+-- NEW FRAME
+------------------------------------------------------------
 
-	end
+local function NewVisualFrame()
 
-	local Char =
-		Target.Character
-
-	if not Char then
-
-		return false
-
-	end
-
-	local H =
-		Char:FindFirstChildOfClass(
-			"Humanoid"
+	local Object =
+		Instance.new(
+			"Frame"
 		)
 
-	if not H
-		or H.Health <= 0
-	then
+	Object.BorderSizePixel =
+		0
 
-		return false
+	Object.BackgroundColor3 =
+		Color3.new(
+			1,
+			1,
+			1
+		)
 
-	end
+	Object.Visible =
+		false
 
-	if ESPFilter ==
-		"Aliados"
-	then
+	Object.ZIndex =
+		70
 
-		return Player.Team ~= nil
+	Object.Parent =
+		VisualGui
 
-			and Target.Team ==
-			Player.Team
-
-	end
-
-	if ESPFilter ==
-		"Inimigos"
-	then
-
-		if Player.Team ==
-			nil
-		then
-
-			return true
-
-		end
-
-		return Target.Team ~=
-			Player.Team
-
-	end
-
-	return true
-
+	return Object
 end
 
 ------------------------------------------------------------
--- COLOR
+-- NEW TEXT
 ------------------------------------------------------------
 
-local function PlayerESPColor(
-	Target
-)
+local function NewVisualText()
 
-	if Player.Team
-		and Target.Team
-	then
+	local Object =
+		Instance.new(
+			"TextLabel"
+		)
 
-		if Target.Team ==
-			Player.Team
-		then
+	Object.BackgroundTransparency =
+		1
 
-			return Color3.fromRGB(
-				75,
-				220,
-				145
-			)
+	Object.BorderSizePixel =
+		0
 
-		else
+	Object.TextColor3 =
+		Color3.new(
+			1,
+			1,
+			1
+		)
 
-			return Color3.fromRGB(
-				240,
-				75,
-				95
-			)
+	Object.TextStrokeColor3 =
+		Color3.new(
+			0,
+			0,
+			0
+		)
 
-		end
+	Object.TextStrokeTransparency =
+		0.25
 
-	end
+	Object.TextSize =
+		11
 
-	return T().Accent
+	Object.FontFace =
+		FONT_MEDIUM
 
+	Object.Visible =
+		false
+
+	Object.ZIndex =
+		73
+
+	Object.Parent =
+		VisualGui
+
+	return Object
 end
 
 ------------------------------------------------------------
--- CREATE ESP DATA
+-- CREATE ESP
 ------------------------------------------------------------
 
-local function GetESPData(
+local function CreateESPData(
 	Target
 )
 
-	if ESPObjects[
+	if ESPCache[
 		Target
 	] then
 
-		return ESPObjects[
+		return ESPCache[
 			Target
 		]
-
 	end
 
-	local Data =
-		{}
+	local Data = {}
 
 	--------------------------------------------------------
 	-- BOX
 	--------------------------------------------------------
 
-	local Box =
-		Instance.new(
-			"Frame"
-		)
+	Data.Top =
+		NewVisualFrame()
 
-	Box.BackgroundTransparency =
-		1
+	Data.Bottom =
+		NewVisualFrame()
 
-	Box.BorderSizePixel =
-		0
+	Data.Left =
+		NewVisualFrame()
 
-	Box.Visible =
-		false
-
-	Box.Parent =
-		ESPGui
-
-	local BoxStroke =
-		Instance.new(
-			"UIStroke"
-		)
-
-	BoxStroke.Thickness =
-		1.6
-
-	BoxStroke.Parent =
-		Box
-
-	Data.Box =
-		Box
-
-	Data.BoxStroke =
-		BoxStroke
+	Data.Right =
+		NewVisualFrame()
 
 	--------------------------------------------------------
 	-- LINE
 	--------------------------------------------------------
 
-	local Line =
-		Instance.new(
-			"Frame"
-		)
+	Data.Line =
+		NewVisualFrame()
 
-	Line.AnchorPoint =
+	Data.Line.AnchorPoint =
 		Vector2.new(
 			0.5,
 			0.5
 		)
 
-	Line.BorderSizePixel =
-		0
+	--------------------------------------------------------
+	-- HEALTH
+	--------------------------------------------------------
 
-	Line.Visible =
-		false
+	Data.HealthBG =
+		NewVisualFrame()
 
-	Line.Parent =
-		ESPGui
+	Data.HealthBG.BackgroundColor3 =
+		Color3.fromRGB(
+			20,
+			20,
+			20
+		)
 
-	Data.Line =
-		Line
+	Data.Health =
+		NewVisualFrame()
+
+	--------------------------------------------------------
+	-- TEXT
+	--------------------------------------------------------
+
+	Data.Name =
+		NewVisualText()
+
+	Data.Name.TextXAlignment =
+		Enum.TextXAlignment.Center
+
+	Data.Distance =
+		NewVisualText()
+
+	Data.Distance.TextXAlignment =
+		Enum.TextXAlignment.Center
+
+	Data.Tool =
+		NewVisualText()
+
+	Data.Tool.TextXAlignment =
+		Enum.TextXAlignment.Center
 
 	--------------------------------------------------------
 	-- CHAMS
 	--------------------------------------------------------
 
-	local Chams =
+	Data.Chams =
 		Instance.new(
 			"Highlight"
 		)
 
-	Chams.DepthMode =
+	Data.Chams.Name =
+		"SouzaPlayerChams"
+
+	Data.Chams.DepthMode =
 		Enum.HighlightDepthMode.AlwaysOnTop
 
-	Chams.FillTransparency =
-		0.66
+	Data.Chams.FillTransparency =
+		0.73
 
-	Chams.OutlineTransparency =
-		0.05
+	Data.Chams.OutlineTransparency =
+		0.06
 
-	Chams.Enabled =
+	Data.Chams.Enabled =
 		false
 
-	-- CurrentCamera = visual local
-	Chams.Parent =
+	Data.Chams.Parent =
 		Camera
-
-	Data.Chams =
-		Chams
 
 	--------------------------------------------------------
 
-	ESPObjects[
+	ESPCache[
 		Target
 	] =
 		Data
 
 	return Data
-
 end
 
 ------------------------------------------------------------
--- HIDE
+-- HIDE ESP
 ------------------------------------------------------------
 
 local function HideESP(
 	Data
 )
 
-	Data.Box.Visible =
+	Data.Top.Visible =
+		false
+
+	Data.Bottom.Visible =
+		false
+
+	Data.Left.Visible =
+		false
+
+	Data.Right.Visible =
 		false
 
 	Data.Line.Visible =
 		false
 
-	Data.Chams.Enabled =
+	Data.HealthBG.Visible =
 		false
 
+	Data.Health.Visible =
+		false
+
+	Data.Name.Visible =
+		false
+
+	Data.Distance.Visible =
+		false
+
+	Data.Tool.Visible =
+		false
+
+	Data.Chams.Enabled =
+		false
 end
 
 ------------------------------------------------------------
--- BOX UPDATE
+-- REMOVE ESP
 ------------------------------------------------------------
 
-local function UpdateBox(
-	Data,
+local function RemoveESP(
+	Target
+)
+
+	local Data =
+		ESPCache[
+			Target
+		]
+
+	if not Data then
+
+		return
+	end
+
+	for _,
+		Object
+		in pairs(
+			Data
+		)
+	do
+
+		if typeof(Object) ==
+			"Instance"
+		then
+
+			Object:Destroy()
+		end
+	end
+
+	ESPCache[
+		Target
+	] =
+		nil
+
+	VisibilityCache[
+		Target
+	] =
+		nil
+end
+
+------------------------------------------------------------
+-- TEAM CHECK
+------------------------------------------------------------
+
+local function PassesTeamCheck(
+	Target
+)
+
+	if not VISUAL.TeamCheck then
+
+		return true
+	end
+
+	--------------------------------------------------------
+	-- sem times configurados
+	--------------------------------------------------------
+
+	if Player.Team == nil
+		or Target.Team == nil
+	then
+
+		return true
+	end
+
+	return Target.Team ~=
+		Player.Team
+end
+
+------------------------------------------------------------
+-- TOOL
+------------------------------------------------------------
+
+local function GetEquippedToolName(
+	Char
+)
+
+	if not Char then
+
+		return ""
+	end
+
+	local Tool =
+		Char:FindFirstChildOfClass(
+			"Tool"
+		)
+
+	if Tool then
+
+		return Tool.Name
+	end
+
+	return ""
+end
+
+------------------------------------------------------------
+-- CALCULATE BOX
+------------------------------------------------------------
+
+local function CalculateBox(
 	Char
 )
 
@@ -3366,7 +3181,6 @@ local function UpdateBox(
 				return
 					A,
 					B
-
 			end
 		)
 
@@ -3374,27 +3188,61 @@ local function UpdateBox(
 		or not CF
 	then
 
-		Data.Box.Visible =
-			false
-
-		return
-
+		return nil
 	end
 
 	local Half =
 		Size / 2
 
-	local Points = {
+	local Corners = {
 
-		Vector3.new(-Half.X, -Half.Y, -Half.Z),
-		Vector3.new( Half.X, -Half.Y, -Half.Z),
-		Vector3.new(-Half.X,  Half.Y, -Half.Z),
-		Vector3.new( Half.X,  Half.Y, -Half.Z),
+		Vector3.new(
+			-Half.X,
+			-Half.Y,
+			-Half.Z
+		),
 
-		Vector3.new(-Half.X, -Half.Y, Half.Z),
-		Vector3.new( Half.X, -Half.Y, Half.Z),
-		Vector3.new(-Half.X,  Half.Y, Half.Z),
-		Vector3.new( Half.X,  Half.Y, Half.Z)
+		Vector3.new(
+			Half.X,
+			-Half.Y,
+			-Half.Z
+		),
+
+		Vector3.new(
+			-Half.X,
+			Half.Y,
+			-Half.Z
+		),
+
+		Vector3.new(
+			Half.X,
+			Half.Y,
+			-Half.Z
+		),
+
+		Vector3.new(
+			-Half.X,
+			-Half.Y,
+			Half.Z
+		),
+
+		Vector3.new(
+			Half.X,
+			-Half.Y,
+			Half.Z
+		),
+
+		Vector3.new(
+			-Half.X,
+			Half.Y,
+			Half.Z
+		),
+
+		Vector3.new(
+			Half.X,
+			Half.Y,
+			Half.Z
+		),
 	}
 
 	local MinX =
@@ -3409,7 +3257,7 @@ local function UpdateBox(
 	local MaxY =
 		-math.huge
 
-	local Valid =
+	local Found =
 		false
 
 	--------------------------------------------------------
@@ -3417,7 +3265,7 @@ local function UpdateBox(
 	for _,
 		Point
 		in ipairs(
-			Points
+			Corners
 		)
 	do
 
@@ -3433,7 +3281,7 @@ local function UpdateBox(
 
 		if Screen.Z > 0 then
 
-			Valid =
+			Found =
 				true
 
 			MinX =
@@ -3459,74 +3307,283 @@ local function UpdateBox(
 					MaxY,
 					Screen.Y
 				)
-
 		end
-
 	end
 
-	if not Valid then
+	if not Found then
 
-		Data.Box.Visible =
-			false
-
-		return
-
+		return nil
 	end
 
-	Data.Box.Position =
-		UDim2.fromOffset(
+	local Width =
+		MaxX - MinX
 
-			MinX,
+	local Height =
+		MaxY - MinY
 
+	if Width < 2
+		or Height < 3
+	then
+
+		return nil
+	end
+
+	return {
+
+		X = MinX,
+
+		Y = MinY,
+
+		Width = Width,
+
+		Height = Height,
+
+		CenterX =
+			MinX
+			+ Width / 2,
+
+		CenterY =
 			MinY
+			+ Height / 2,
 
-		)
-
-	Data.Box.Size =
-		UDim2.fromOffset(
-
-			math.max(
-				MaxX - MinX,
-				2
-			),
-
-			math.max(
-				MaxY - MinY,
-				2
-			)
-
-		)
-
-	Data.Box.Visible =
-		true
-
+		BottomY =
+			MaxY,
+	}
 end
 
 ------------------------------------------------------------
--- LINE UPDATE
+-- VISIBILITY
 ------------------------------------------------------------
 
-local function UpdateLine(
-	Data,
-	WorldPosition
+local function CalculateVisibility(
+	Target,
+	TargetChar,
+	TargetRoot
 )
 
-	local Screen,
-		Visible =
-		Camera:WorldToViewportPoint(
-			WorldPosition
-		)
+	if not VISUAL.VisibilityCheck then
 
-	if not Visible
-		or Screen.Z <= 0
+		return true
+	end
+
+	local Now =
+		os.clock()
+
+	local Cached =
+		VisibilityCache[
+			Target
+		]
+
+	if Cached
+		and Now
+			- Cached.Time
+			< CONFIG.VisibilityRefreshRate
 	then
 
-		Data.Line.Visible =
-			false
-
-		return
-
+		return Cached.Visible
 	end
+
+	local Params =
+		RaycastParams.new()
+
+	Params.FilterType =
+		Enum.RaycastFilterType.Exclude
+
+	Params.FilterDescendantsInstances = {
+
+		Character
+	}
+
+	Params.IgnoreWater =
+		true
+
+	local Origin =
+		Camera.CFrame.Position
+
+	local Direction =
+		TargetRoot.Position
+		- Origin
+
+	local Result =
+		workspace:Raycast(
+
+			Origin,
+
+			Direction,
+
+			Params
+
+		)
+
+	local Visible =
+		false
+
+	if not Result then
+
+		Visible =
+			true
+
+	elseif Result.Instance
+		and Result.Instance:IsDescendantOf(
+			TargetChar
+		)
+	then
+
+		Visible =
+			true
+	end
+
+	VisibilityCache[
+		Target
+	] = {
+
+		Time = Now,
+
+		Visible = Visible
+	}
+
+	return Visible
+end
+
+------------------------------------------------------------
+-- BOX DRAW
+------------------------------------------------------------
+
+local function DrawBox(
+	Data,
+	Box,
+	Color
+)
+
+	local Thickness =
+		1.5
+
+	--------------------------------------------------------
+	-- TOP
+	--------------------------------------------------------
+
+	Data.Top.Position =
+		UDim2.fromOffset(
+
+			Box.X,
+
+			Box.Y
+
+		)
+
+	Data.Top.Size =
+		UDim2.fromOffset(
+
+			Box.Width,
+
+			Thickness
+
+		)
+
+	Data.Top.BackgroundColor3 =
+		Color
+
+	--------------------------------------------------------
+	-- BOTTOM
+	--------------------------------------------------------
+
+	Data.Bottom.Position =
+		UDim2.fromOffset(
+
+			Box.X,
+
+			Box.Y
+			+ Box.Height
+
+		)
+
+	Data.Bottom.Size =
+		UDim2.fromOffset(
+
+			Box.Width,
+
+			Thickness
+
+		)
+
+	Data.Bottom.BackgroundColor3 =
+		Color
+
+	--------------------------------------------------------
+	-- LEFT
+	--------------------------------------------------------
+
+	Data.Left.Position =
+		UDim2.fromOffset(
+
+			Box.X,
+
+			Box.Y
+
+		)
+
+	Data.Left.Size =
+		UDim2.fromOffset(
+
+			Thickness,
+
+			Box.Height
+
+		)
+
+	Data.Left.BackgroundColor3 =
+		Color
+
+	--------------------------------------------------------
+	-- RIGHT
+	--------------------------------------------------------
+
+	Data.Right.Position =
+		UDim2.fromOffset(
+
+			Box.X
+			+ Box.Width,
+
+			Box.Y
+
+		)
+
+	Data.Right.Size =
+		UDim2.fromOffset(
+
+			Thickness,
+
+			Box.Height
+
+		)
+
+	Data.Right.BackgroundColor3 =
+		Color
+
+	--------------------------------------------------------
+
+	Data.Top.Visible =
+		true
+
+	Data.Bottom.Visible =
+		true
+
+	Data.Left.Visible =
+		true
+
+	Data.Right.Visible =
+		true
+end
+
+------------------------------------------------------------
+-- LINE DRAW
+------------------------------------------------------------
+
+local function DrawLine(
+	Data,
+	Box,
+	Color
+)
 
 	local View =
 		Camera.ViewportSize
@@ -3536,16 +3593,16 @@ local function UpdateLine(
 
 			View.X / 2,
 
-			View.Y - 18
+			View.Y - 8
 
 		)
 
 	local To =
 		Vector2.new(
 
-			Screen.X,
+			Box.CenterX,
 
-			Screen.Y
+			Box.BottomY
 
 		)
 
@@ -3554,8 +3611,9 @@ local function UpdateLine(
 
 	local Center =
 		From
-
 		+ Delta / 2
+
+	--------------------------------------------------------
 
 	Data.Line.Position =
 		UDim2.fromOffset(
@@ -3571,7 +3629,7 @@ local function UpdateLine(
 
 			Delta.Magnitude,
 
-			1.5
+			1.35
 
 		)
 
@@ -3585,62 +3643,284 @@ local function UpdateLine(
 				Delta.X
 
 			)
-
 		)
+
+	Data.Line.BackgroundColor3 =
+		Color
 
 	Data.Line.Visible =
 		true
-
 end
 
 ------------------------------------------------------------
--- ESP LOOP
+-- HEALTH DRAW
 ------------------------------------------------------------
 
-local ESPClock =
-	0
+local function DrawHealth(
+	Data,
+	Box,
+	TargetHumanoid
+)
 
-RunService.RenderStepped:Connect(
-	function(DT)
+	if not VISUAL.Health then
 
-		ESPClock +=
-			DT
+		Data.HealthBG.Visible =
+			false
 
-		if ESPClock <
-			CONFIG.ESPUpdateRate
-		then
+		Data.Health.Visible =
+			false
 
-			return
+		return
+	end
 
+	local Ratio =
+		0
+
+	if TargetHumanoid.MaxHealth >
+		0
+	then
+
+		Ratio =
+			math.clamp(
+
+				TargetHumanoid.Health
+				/ TargetHumanoid.MaxHealth,
+
+				0,
+
+				1
+
+			)
+	end
+
+	--------------------------------------------------------
+	-- BG
+	--------------------------------------------------------
+
+	Data.HealthBG.Position =
+		UDim2.fromOffset(
+
+			Box.X - 7,
+
+			Box.Y
+
+		)
+
+	Data.HealthBG.Size =
+		UDim2.fromOffset(
+
+			4,
+
+			Box.Height
+
+		)
+
+	Data.HealthBG.Visible =
+		true
+
+	--------------------------------------------------------
+
+	local Height =
+		Box.Height
+		* Ratio
+
+	Data.Health.Position =
+		UDim2.fromOffset(
+
+			Box.X - 7,
+
+			Box.Y
+			+ Box.Height
+			- Height
+
+		)
+
+	Data.Health.Size =
+		UDim2.fromOffset(
+
+			4,
+
+			Height
+
+		)
+
+	--------------------------------------------------------
+	-- RED -> GREEN
+	--------------------------------------------------------
+
+	Data.Health.BackgroundColor3 =
+		Color3.new(
+
+			1 - Ratio,
+
+			Ratio,
+
+			0.15
+
+		)
+
+	Data.Health.Visible =
+		true
+end
+
+------------------------------------------------------------
+-- TEXT DATA
+------------------------------------------------------------
+
+local function DrawTexts(
+	Data,
+	Target,
+	Box,
+	Distance
+)
+
+	--------------------------------------------------------
+	-- NAME
+	--------------------------------------------------------
+
+	if VISUAL.Name then
+
+		Data.Name.Text =
+			Target.DisplayName
+
+		Data.Name.Position =
+			UDim2.fromOffset(
+
+				Box.CenterX - 90,
+
+				Box.Y - 18
+
+			)
+
+		Data.Name.Size =
+			UDim2.fromOffset(
+				180,
+				16
+			)
+
+		Data.Name.Visible =
+			true
+
+	else
+
+		Data.Name.Visible =
+			false
+	end
+
+	--------------------------------------------------------
+	-- DISTANCE
+	--------------------------------------------------------
+
+	if VISUAL.Distance then
+
+		Data.Distance.Text =
+			math.floor(
+				Distance
+			)
+			.. " studs"
+
+		Data.Distance.Position =
+			UDim2.fromOffset(
+
+				Box.CenterX - 90,
+
+				Box.BottomY + 2
+
+			)
+
+		Data.Distance.Size =
+			UDim2.fromOffset(
+				180,
+				15
+			)
+
+		Data.Distance.Visible =
+			true
+
+	else
+
+		Data.Distance.Visible =
+			false
+	end
+
+	--------------------------------------------------------
+	-- TOOL
+	--------------------------------------------------------
+
+	if VISUAL.Tool then
+
+		local Tool =
+			GetEquippedToolName(
+				Target.Character
+			)
+
+		if Tool ~= "" then
+
+			Data.Tool.Text =
+				Tool
+
+			Data.Tool.Position =
+				UDim2.fromOffset(
+
+					Box.CenterX - 90,
+
+					Box.BottomY + 16
+
+				)
+
+			Data.Tool.Size =
+				UDim2.fromOffset(
+					180,
+					15
+				)
+
+			Data.Tool.Visible =
+				true
+
+		else
+
+			Data.Tool.Visible =
+				false
 		end
 
-		ESPClock =
-			0
+	else
 
-		local AnyEnabled =
-			ESPLine
-			or ESPBox
-			or ESPChams
+		Data.Tool.Visible =
+			false
+	end
+end
 
-		----------------------------------------------------
+------------------------------------------------------------
+-- ESP RENDER LOOP
+------------------------------------------------------------
 
-		if not AnyEnabled then
+RunService.RenderStepped:Connect(
+	function()
+
+		local AnyESP =
+			VISUAL.Box
+			or VISUAL.Line
+			or VISUAL.Chams
+			or VISUAL.Name
+			or VISUAL.Distance
+			or VISUAL.Health
+			or VISUAL.Tool
+
+		if not AnyESP then
 
 			for _,
 				Data
 				in pairs(
-					ESPObjects
+					ESPCache
 				)
 			do
 
 				HideESP(
 					Data
 				)
-
 			end
 
 			return
-
 		end
 
 		----------------------------------------------------
@@ -3657,15 +3937,18 @@ RunService.RenderStepped:Connect(
 			then
 
 				continue
-
 			end
 
 			local Data =
-				GetESPData(
+				CreateESPData(
 					Target
 				)
 
-			if not ShouldShowPlayer(
+			------------------------------------------------
+			-- TEAM
+			------------------------------------------------
+
+			if not PassesTeamCheck(
 				Target
 			) then
 
@@ -3674,20 +3957,37 @@ RunService.RenderStepped:Connect(
 				)
 
 				continue
-
 			end
 
-			local Char =
+			------------------------------------------------
+			-- CHARACTER
+			------------------------------------------------
+
+			local TargetChar =
 				Target.Character
 
-			local TargetRoot =
-				Char
+			if not TargetChar then
 
-				and Char:FindFirstChild(
+				HideESP(
+					Data
+				)
+
+				continue
+			end
+
+			local TargetRoot =
+				TargetChar:FindFirstChild(
 					"HumanoidRootPart"
 				)
 
+			local TargetHumanoid =
+				TargetChar:FindFirstChildOfClass(
+					"Humanoid"
+				)
+
 			if not TargetRoot
+				or not TargetHumanoid
+				or TargetHumanoid.Health <= 0
 				or not Root
 			then
 
@@ -3696,8 +3996,11 @@ RunService.RenderStepped:Connect(
 				)
 
 				continue
-
 			end
+
+			------------------------------------------------
+			-- DISTANCE
+			------------------------------------------------
 
 			local Distance =
 				(
@@ -3716,73 +4019,491 @@ RunService.RenderStepped:Connect(
 				)
 
 				continue
-
 			end
 
 			------------------------------------------------
-
-			local Color =
-				PlayerESPColor(
-					Target
-				)
-
-			Data.BoxStroke.Color =
-				Color
-
-			Data.Line.BackgroundColor3 =
-				Color
-
-			Data.Chams.FillColor =
-				Color
-
-			Data.Chams.OutlineColor =
-				T().Text
-
-			Data.Chams.Adornee =
-				Char
-
+			-- 2D BOX
 			------------------------------------------------
 
-			if ESPBox then
+			local Box =
+				CalculateBox(
+					TargetChar
+				)
 
-				UpdateBox(
+			if not Box then
+
+				HideESP(
+					Data
+				)
+
+				continue
+			end
+
+			------------------------------------------------
+			-- VISIBILITY
+			------------------------------------------------
+
+			local Visible =
+				CalculateVisibility(
+
+					Target,
+
+					TargetChar,
+
+					TargetRoot
+
+				)
+
+			local Color
+
+			if VISUAL.VisibilityCheck then
+
+				if Visible then
+
+					Color =
+						Color3.fromRGB(
+							67,
+							226,
+							137
+						)
+
+				else
+
+					Color =
+						Color3.fromRGB(
+							241,
+							70,
+							91
+						)
+				end
+
+			else
+
+				Color =
+					Theme().Accent
+			end
+
+			------------------------------------------------
+			-- BOX
+			------------------------------------------------
+
+			if VISUAL.Box then
+
+				DrawBox(
 					Data,
-					Char
+					Box,
+					Color
 				)
 
 			else
 
-				Data.Box.Visible =
+				Data.Top.Visible =
 					false
 
+				Data.Bottom.Visible =
+					false
+
+				Data.Left.Visible =
+					false
+
+				Data.Right.Visible =
+					false
 			end
 
 			------------------------------------------------
+			-- LINE
+			------------------------------------------------
 
-			if ESPLine then
+			if VISUAL.Line then
 
-				UpdateLine(
-
+				DrawLine(
 					Data,
-
-					TargetRoot.Position
-
+					Box,
+					Color
 				)
 
 			else
 
 				Data.Line.Visible =
 					false
-
 			end
 
 			------------------------------------------------
+			-- HEALTH
+			------------------------------------------------
 
-			Data.Chams.Enabled =
-				ESPChams
+			DrawHealth(
+
+				Data,
+
+				Box,
+
+				TargetHumanoid
+
+			)
+
+			------------------------------------------------
+			-- TEXT
+			------------------------------------------------
+
+			DrawTexts(
+
+				Data,
+
+				Target,
+
+				Box,
+
+				Distance
+
+			)
+
+			------------------------------------------------
+			-- CHAMS
+			------------------------------------------------
+
+			if VISUAL.Chams then
+
+				Data.Chams.Adornee =
+					TargetChar
+
+				Data.Chams.FillColor =
+					Color
+
+				Data.Chams.OutlineColor =
+					Theme().Text
+
+				Data.Chams.Enabled =
+					true
+
+			else
+
+				Data.Chams.Enabled =
+					false
+			end
+		end
+	end
+)
+
+------------------------------------------------------------
+-- MEMORY CLEANUP
+------------------------------------------------------------
+
+Players.PlayerRemoving:Connect(
+	function(Target)
+
+		RemoveESP(
+			Target
+		)
+
+	end
+)
+
+------------------------------------------------------------
+-- ========================================================
+-- XRAY OUTLINE
+-- ========================================================
+------------------------------------------------------------
+
+local XRayObjects = {}
+
+local XRayAccumulator =
+	0
+
+------------------------------------------------------------
+-- CLEAR XRAY
+------------------------------------------------------------
+
+local function ClearXRay()
+
+	for _,
+		Highlight
+		in pairs(
+			XRayObjects
+		)
+	do
+
+		if Highlight then
+
+			Highlight:Destroy()
 
 		end
+	end
 
+	XRayObjects = {}
+end
+
+------------------------------------------------------------
+-- XRAY CANDIDATE
+------------------------------------------------------------
+
+local function XRayCandidate(
+	Object
+)
+
+	if not Object:IsA(
+		"BasePart"
+	) then
+
+		return false
+	end
+
+	if not Object.Anchored then
+
+		return false
+	end
+
+	if Object.Transparency >= 1 then
+
+		return false
+	end
+
+	if Platform
+		and Object ==
+			Platform
+	then
+
+		return false
+	end
+
+	if Character
+		and Object:IsDescendantOf(
+			Character
+		)
+	then
+
+		return false
+	end
+
+	for _,
+		P
+		in ipairs(
+			Players:GetPlayers()
+		)
+	do
+
+		local Char =
+			P.Character
+
+		if Char
+			and Object:IsDescendantOf(
+				Char
+			)
+		then
+
+			return false
+		end
+	end
+
+	if Object.Size.Magnitude <
+		CONFIG.XRayMinimumMagnitude
+	then
+
+		return false
+	end
+
+	return true
+end
+
+------------------------------------------------------------
+-- CREATE XRAY
+------------------------------------------------------------
+
+local function AddXRayObject(
+	Part
+)
+
+	if XRayObjects[
+		Part
+	] then
+
+		return
+	end
+
+	local Highlight =
+		Instance.new(
+			"Highlight"
+		)
+
+	Highlight.Name =
+		"SouzaXRayOutline"
+
+	Highlight.Adornee =
+		Part
+
+	Highlight.DepthMode =
+		Enum.HighlightDepthMode.AlwaysOnTop
+
+	Highlight.FillTransparency =
+		1
+
+	Highlight.OutlineTransparency =
+		0.18
+
+	Highlight.OutlineColor =
+		Theme().Accent
+
+	Highlight.Parent =
+		Camera
+
+	XRayObjects[
+		Part
+	] =
+		Highlight
+end
+
+------------------------------------------------------------
+-- REBUILD XRAY
+------------------------------------------------------------
+
+local function RefreshXRay()
+
+	if not VISUAL.XRay
+		or not Root
+	then
+
+		ClearXRay()
+
+		return
+	end
+
+	--------------------------------------------------------
+	-- limpa apenas os highlights nossos
+	--------------------------------------------------------
+
+	ClearXRay()
+
+	local Candidates = {}
+
+	--------------------------------------------------------
+
+	local Objects =
+		workspace:GetDescendants()
+
+	for Index,
+		Object
+		in ipairs(
+			Objects
+		)
+	do
+
+		if XRayCandidate(
+			Object
+		) then
+
+			local Distance =
+				(
+					Object.Position
+					- Root.Position
+				).Magnitude
+
+			if Distance <=
+				CONFIG.XRayDistance
+			then
+
+				table.insert(
+					Candidates,
+					{
+						Part = Object,
+
+						Distance = Distance
+					}
+				)
+			end
+		end
+
+		if Index % 300 ==
+			0
+		then
+
+			RunService.Heartbeat:Wait()
+		end
+	end
+
+	--------------------------------------------------------
+	-- MAIS PRÓXIMOS PRIMEIRO
+	--------------------------------------------------------
+
+	table.sort(
+		Candidates,
+
+		function(A, B)
+
+			return A.Distance <
+				B.Distance
+		end
+	)
+
+	local Limit =
+		math.min(
+
+			#Candidates,
+
+			CONFIG.XRayMaxObjects
+
+		)
+
+	for Index = 1,
+		Limit
+	do
+
+		AddXRayObject(
+			Candidates[Index].Part
+		)
+	end
+end
+
+------------------------------------------------------------
+-- XRAY LOOP
+------------------------------------------------------------
+
+RunService.Heartbeat:Connect(
+	function(DT)
+
+		XRayAccumulator +=
+			DT
+
+		if XRayAccumulator <
+			CONFIG.XRayRefreshRate
+		then
+
+			return
+		end
+
+		XRayAccumulator =
+			0
+
+		if VISUAL.XRay then
+
+			task.spawn(
+				RefreshXRay
+			)
+		end
+	end
+)
+
+------------------------------------------------------------
+-- THEME XRAY
+------------------------------------------------------------
+
+RegisterThemeRefresh(
+	function()
+
+		for _,
+			Highlight
+			in pairs(
+				XRayObjects
+			)
+		do
+
+			if Highlight
+				and Highlight.Parent
+			then
+
+				Highlight.OutlineColor =
+					Theme().Accent
+			end
+		end
 	end
 )
 
@@ -3798,7 +4519,7 @@ local GUI =
 	)
 
 GUI.Name =
-	"SouzaAdminV11"
+	"SouzaAdminV12"
 
 GUI.ResetOnSpawn =
 	false
@@ -3857,7 +4578,7 @@ Main.ClipsDescendants =
 Main.Parent =
 	GUI
 
-Bind(
+BindTheme(
 	Main,
 	"BackgroundColor3",
 	"BG"
@@ -3865,7 +4586,7 @@ Bind(
 
 Corner(
 	Main,
-	14
+	15
 )
 
 Stroke(
@@ -3876,7 +4597,7 @@ Stroke(
 )
 
 ------------------------------------------------------------
--- BACKGROUND
+-- MAIN GRADIENT
 ------------------------------------------------------------
 
 local MainGradient =
@@ -3890,28 +4611,32 @@ MainGradient.Rotation =
 MainGradient.Parent =
 	Main
 
+------------------------------------------------------------
+
 local function RefreshMainGradient()
+
+	local T =
+		Theme()
 
 	MainGradient.Color =
 		ColorSequence.new({
 
 			ColorSequenceKeypoint.new(
 				0,
-				T().BG2
+				T.BG2
 			),
 
 			ColorSequenceKeypoint.new(
 				0.55,
-				T().BG
+				T.BG
 			),
 
 			ColorSequenceKeypoint.new(
 				1,
-				T().Control
-			)
+				T.Control
+			),
 
 		})
-
 end
 
 RefreshMainGradient()
@@ -3921,15 +4646,15 @@ RegisterThemeRefresh(
 )
 
 ------------------------------------------------------------
--- SCALE
+-- UI SCALE
 ------------------------------------------------------------
 
-local MainScale =
+local UIScaler =
 	Instance.new(
 		"UIScale"
 	)
 
-MainScale.Parent =
+UIScaler.Parent =
 	Main
 
 local ManualScale =
@@ -3937,7 +4662,7 @@ local ManualScale =
 
 ------------------------------------------------------------
 
-local function RefreshScale()
+local function UpdateUIScale()
 
 	local View =
 		Camera.ViewportSize
@@ -3953,28 +4678,27 @@ local function RefreshScale()
 
 			),
 
-			0.62,
+			0.60,
 
 			1
 
 		)
 
-	MainScale.Scale =
+	UIScaler.Scale =
 		Automatic
 		* ManualScale
-
 end
 
-RefreshScale()
+UpdateUIScale()
 
 Camera:GetPropertyChangedSignal(
 	"ViewportSize"
 ):Connect(
-	RefreshScale
+	UpdateUIScale
 )
 
 ------------------------------------------------------------
--- TOP BAR
+-- TOP ACCENT
 ------------------------------------------------------------
 
 local TopAccent =
@@ -3993,10 +4717,13 @@ TopAccent.Size =
 TopAccent.BorderSizePixel =
 	0
 
+TopAccent.ZIndex =
+	40
+
 TopAccent.Parent =
 	Main
 
-Bind(
+BindTheme(
 	TopAccent,
 	"BackgroundColor3",
 	"Accent"
@@ -4030,7 +4757,7 @@ Sidebar.BorderSizePixel =
 Sidebar.Parent =
 	Main
 
-Bind(
+BindTheme(
 	Sidebar,
 	"BackgroundColor3",
 	"Sidebar"
@@ -4071,7 +4798,7 @@ LogoHolder.BorderSizePixel =
 LogoHolder.Parent =
 	Sidebar
 
-Bind(
+BindTheme(
 	LogoHolder,
 	"BackgroundColor3",
 	"Card"
@@ -4089,6 +4816,8 @@ Stroke(
 	0
 )
 
+------------------------------------------------------------
+-- LOGO FALLBACK
 ------------------------------------------------------------
 
 local LogoFallback =
@@ -4117,12 +4846,14 @@ LogoFallback.FontFace =
 LogoFallback.Parent =
 	LogoHolder
 
-Bind(
+BindTheme(
 	LogoFallback,
 	"TextColor3",
 	"Accent"
 )
 
+------------------------------------------------------------
+-- LOGO IMAGE
 ------------------------------------------------------------
 
 local Logo =
@@ -4198,7 +4929,7 @@ Brand.FontFace =
 Brand.Parent =
 	Sidebar
 
-Bind(
+BindTheme(
 	Brand,
 	"TextColor3",
 	"Text"
@@ -4240,7 +4971,7 @@ BrandSub.FontFace =
 BrandSub.Parent =
 	Sidebar
 
-Bind(
+BindTheme(
 	BrandSub,
 	"TextColor3",
 	"Muted"
@@ -4266,7 +4997,7 @@ Navigation.Size =
 		1,
 		-20,
 		1,
-		-152
+		-154
 	)
 
 Navigation.BackgroundTransparency =
@@ -4274,6 +5005,8 @@ Navigation.BackgroundTransparency =
 
 Navigation.Parent =
 	Sidebar
+
+------------------------------------------------------------
 
 local NavLayout =
 	Instance.new(
@@ -4354,15 +5087,15 @@ Header.Parent =
 	Content
 
 ------------------------------------------------------------
--- DRAG AREA
+-- HEADER DRAG
 ------------------------------------------------------------
 
-local DragArea =
+local HeaderDrag =
 	Instance.new(
 		"Frame"
 	)
 
-DragArea.Size =
+HeaderDrag.Size =
 	UDim2.new(
 		1,
 		-70,
@@ -4370,54 +5103,54 @@ DragArea.Size =
 		0
 	)
 
-DragArea.BackgroundTransparency =
+HeaderDrag.BackgroundTransparency =
 	1
 
-DragArea.Active =
+HeaderDrag.Active =
 	true
 
-DragArea.Parent =
+HeaderDrag.Parent =
 	Header
 
 ------------------------------------------------------------
 
-local HeaderSmall =
+local SmallHeader =
 	Instance.new(
 		"TextLabel"
 	)
 
-HeaderSmall.Position =
+SmallHeader.Position =
 	UDim2.fromOffset(
 		23,
 		12
 	)
 
-HeaderSmall.Size =
+SmallHeader.Size =
 	UDim2.fromOffset(
 		280,
 		15
 	)
 
-HeaderSmall.BackgroundTransparency =
+SmallHeader.BackgroundTransparency =
 	1
 
-HeaderSmall.Text =
+SmallHeader.Text =
 	"PAINEL ADMIN LOCAL"
 
-HeaderSmall.TextSize =
+SmallHeader.TextSize =
 	8
 
-HeaderSmall.FontFace =
+SmallHeader.FontFace =
 	FONT_MEDIUM
 
-HeaderSmall.TextXAlignment =
+SmallHeader.TextXAlignment =
 	Enum.TextXAlignment.Left
 
-HeaderSmall.Parent =
-	DragArea
+SmallHeader.Parent =
+	HeaderDrag
 
-Bind(
-	HeaderSmall,
+BindTheme(
+	SmallHeader,
 	"TextColor3",
 	"Muted"
 )
@@ -4454,9 +5187,9 @@ HeaderIcon.FontFace =
 	FONT_BOLD
 
 HeaderIcon.Parent =
-	DragArea
+	HeaderDrag
 
-Bind(
+BindTheme(
 	HeaderIcon,
 	"TextColor3",
 	"Accent"
@@ -4477,7 +5210,7 @@ HeaderTitle.Position =
 
 HeaderTitle.Size =
 	UDim2.fromOffset(
-		260,
+		300,
 		27
 	)
 
@@ -4497,9 +5230,9 @@ HeaderTitle.TextXAlignment =
 	Enum.TextXAlignment.Left
 
 HeaderTitle.Parent =
-	DragArea
+	HeaderDrag
 
-Bind(
+BindTheme(
 	HeaderTitle,
 	"TextColor3",
 	"Accent"
@@ -4552,13 +5285,13 @@ Close.AutoButtonColor =
 Close.Parent =
 	Header
 
-Bind(
+BindTheme(
 	Close,
 	"BackgroundColor3",
 	"Control"
 )
 
-Bind(
+BindTheme(
 	Close,
 	"TextColor3",
 	"Accent"
@@ -4609,8 +5342,9 @@ PageHolder.Parent =
 -- PAGES
 ------------------------------------------------------------
 
-local Pages =
-	{}
+local Pages = {}
+
+------------------------------------------------------------
 
 local function CreatePage(
 	Name
@@ -4645,14 +5379,14 @@ local function CreatePage(
 	Page.AutomaticCanvasSize =
 		Enum.AutomaticSize.Y
 
+	Page.ScrollingDirection =
+		Enum.ScrollingDirection.Y
+
 	Page.ScrollBarThickness =
 		3
 
 	Page.ScrollBarImageTransparency =
-		0.1
-
-	Page.ScrollingDirection =
-		Enum.ScrollingDirection.Y
+		0.08
 
 	Page.Visible =
 		false
@@ -4660,7 +5394,7 @@ local function CreatePage(
 	Page.Parent =
 		PageHolder
 
-	Bind(
+	BindTheme(
 		Page,
 		"ScrollBarImageColor3",
 		"Accent"
@@ -4707,7 +5441,6 @@ local function CreatePage(
 		Page
 
 	return Page
-
 end
 
 ------------------------------------------------------------
@@ -4774,12 +5507,13 @@ local function CreateSection(
 	Label.Parent =
 		Parent
 
-	Bind(
+	BindTheme(
 		Label,
 		"TextColor3",
 		"Muted"
 	)
 
+	return Label
 end
 
 ------------------------------------------------------------
@@ -4811,7 +5545,7 @@ local function CreateCard(
 	Card.Parent =
 		Parent
 
-	Bind(
+	BindTheme(
 		Card,
 		"BackgroundColor3",
 		"Card"
@@ -4829,6 +5563,8 @@ local function CreateCard(
 		0.25
 	)
 
+	--------------------------------------------------------
+	-- ACCENT
 	--------------------------------------------------------
 
 	local Accent =
@@ -4854,7 +5590,7 @@ local function CreateCard(
 	Accent.Parent =
 		Card
 
-	Bind(
+	BindTheme(
 		Accent,
 		"BackgroundColor3",
 		"Accent"
@@ -4865,6 +5601,8 @@ local function CreateCard(
 		2
 	)
 
+	--------------------------------------------------------
+	-- TITLE
 	--------------------------------------------------------
 
 	local TitleLabel =
@@ -4881,7 +5619,7 @@ local function CreateCard(
 	TitleLabel.Size =
 		UDim2.new(
 			1,
-			-205,
+			-210,
 			0,
 			26
 		)
@@ -4904,12 +5642,14 @@ local function CreateCard(
 	TitleLabel.Parent =
 		Card
 
-	Bind(
+	BindTheme(
 		TitleLabel,
 		"TextColor3",
 		"Text"
 	)
 
+	--------------------------------------------------------
+	-- DESCRIPTION
 	--------------------------------------------------------
 
 	local Desc =
@@ -4926,7 +5666,7 @@ local function CreateCard(
 	Desc.Size =
 		UDim2.new(
 			1,
-			-205,
+			-210,
 			0,
 			18
 		)
@@ -4946,18 +5686,21 @@ local function CreateCard(
 	Desc.TextXAlignment =
 		Enum.TextXAlignment.Left
 
+	Desc.TextTruncate =
+		Enum.TextTruncate.AtEnd
+
 	Desc.Parent =
 		Card
 
-	Bind(
+	BindTheme(
 		Desc,
 		"TextColor3",
 		"Sub"
 	)
 
 	return Card,
+		TitleLabel,
 		Desc
-
 end
 
 ------------------------------------------------------------
@@ -5013,13 +5756,13 @@ local function CreateButton(
 	Button.Parent =
 		Card
 
-	Bind(
+	BindTheme(
 		Button,
 		"BackgroundColor3",
 		"Control"
 	)
 
-	Bind(
+	BindTheme(
 		Button,
 		"TextColor3",
 		"Text"
@@ -5038,7 +5781,6 @@ local function CreateButton(
 	)
 
 	return Button
-
 end
 
 ------------------------------------------------------------
@@ -5052,6 +5794,8 @@ local function CreateToggle(
 
 	local Enabled =
 		false
+
+	--------------------------------------------------------
 
 	local Track =
 		Instance.new(
@@ -5140,13 +5884,13 @@ local function CreateToggle(
 		if Enabled then
 
 			Track.BackgroundColor3 =
-				T().Accent
+				Theme().Accent
 
 			TrackStroke.Color =
-				T().Accent2
+				Theme().Accent2
 
 			Dot.BackgroundColor3 =
-				T().Text
+				Theme().Text
 
 			Dot.Position =
 				UDim2.fromOffset(
@@ -5157,33 +5901,31 @@ local function CreateToggle(
 		else
 
 			Track.BackgroundColor3 =
-				T().Control
+				Theme().Control
 
 			TrackStroke.Color =
-				T().Stroke
+				Theme().Stroke
 
 			Dot.BackgroundColor3 =
-				T().Sub
+				Theme().Sub
 
 			Dot.Position =
 				UDim2.fromOffset(
 					17,
 					16
 				)
-
 		end
-
 	end
 
 	--------------------------------------------------------
 
 	local function Set(
-		Value,
+		State,
 		Fire
 	)
 
 		Enabled =
-			Value
+			State
 
 		Refresh()
 
@@ -5192,11 +5934,9 @@ local function CreateToggle(
 		then
 
 			Callback(
-				Enabled
+				State
 			)
-
 		end
-
 	end
 
 	--------------------------------------------------------
@@ -5225,10 +5965,459 @@ local function CreateToggle(
 		Get = function()
 
 			return Enabled
-
-		end
+		end,
 	}
+end
 
+------------------------------------------------------------
+-- SLIDER
+------------------------------------------------------------
+
+local function CreateSlider(
+	Card,
+	Minimum,
+	Maximum,
+	Initial,
+	Suffix,
+	Callback
+)
+
+	local Value =
+		Initial
+
+	--------------------------------------------------------
+
+	local Holder =
+		Instance.new(
+			"Frame"
+		)
+
+	Holder.AnchorPoint =
+		Vector2.new(
+			1,
+			0.5
+		)
+
+	Holder.Position =
+		UDim2.new(
+			1,
+			-14,
+			0.5,
+			0
+		)
+
+	Holder.Size =
+		UDim2.fromOffset(
+			145,
+			44
+		)
+
+	Holder.BackgroundTransparency =
+		1
+
+	Holder.Parent =
+		Card
+
+	--------------------------------------------------------
+	-- VALUE TEXT
+	--------------------------------------------------------
+
+	local ValueLabel =
+		Instance.new(
+			"TextLabel"
+		)
+
+	ValueLabel.Size =
+		UDim2.new(
+			1,
+			0,
+			0,
+			18
+		)
+
+	ValueLabel.BackgroundTransparency =
+		1
+
+	ValueLabel.TextSize =
+		9
+
+	ValueLabel.FontFace =
+		FONT_BOLD
+
+	ValueLabel.TextXAlignment =
+		Enum.TextXAlignment.Right
+
+	ValueLabel.Parent =
+		Holder
+
+	BindTheme(
+		ValueLabel,
+		"TextColor3",
+		"Text"
+	)
+
+	--------------------------------------------------------
+	-- TRACK
+	--------------------------------------------------------
+
+	local Track =
+		Instance.new(
+			"TextButton"
+		)
+
+	Track.Position =
+		UDim2.fromOffset(
+			0,
+			27
+		)
+
+	Track.Size =
+		UDim2.new(
+			1,
+			0,
+			0,
+			7
+		)
+
+	Track.BorderSizePixel =
+		0
+
+	Track.Text =
+		""
+
+	Track.AutoButtonColor =
+		false
+
+	Track.Parent =
+		Holder
+
+	BindTheme(
+		Track,
+		"BackgroundColor3",
+		"Control"
+	)
+
+	Corner(
+		Track,
+		4
+	)
+
+	--------------------------------------------------------
+	-- FILL
+	--------------------------------------------------------
+
+	local Fill =
+		Instance.new(
+			"Frame"
+		)
+
+	Fill.Size =
+		UDim2.fromScale(
+			0,
+			1
+		)
+
+	Fill.BorderSizePixel =
+		0
+
+	Fill.Parent =
+		Track
+
+	BindTheme(
+		Fill,
+		"BackgroundColor3",
+		"Accent"
+	)
+
+	Corner(
+		Fill,
+		4
+	)
+
+	--------------------------------------------------------
+	-- KNOB
+	--------------------------------------------------------
+
+	local Knob =
+		Instance.new(
+			"Frame"
+		)
+
+	Knob.AnchorPoint =
+		Vector2.new(
+			0.5,
+			0.5
+		)
+
+	Knob.Position =
+		UDim2.fromScale(
+			0,
+			0.5
+		)
+
+	Knob.Size =
+		UDim2.fromOffset(
+			17,
+			17
+		)
+
+	Knob.BorderSizePixel =
+		0
+
+	Knob.Parent =
+		Track
+
+	BindTheme(
+		Knob,
+		"BackgroundColor3",
+		"Text"
+	)
+
+	Corner(
+		Knob,
+		9
+	)
+
+	--------------------------------------------------------
+
+	local Dragging =
+		false
+
+	local ActiveTouch =
+		nil
+
+	--------------------------------------------------------
+
+	local function SetValue(
+		NewValue,
+		Fire
+	)
+
+		Value =
+			math.clamp(
+
+				NewValue,
+
+				Minimum,
+
+				Maximum
+
+			)
+
+		local Alpha =
+			(
+				Value
+				- Minimum
+			)
+			/
+			(
+				Maximum
+				- Minimum
+			)
+
+		Fill.Size =
+			UDim2.fromScale(
+				Alpha,
+				1
+			)
+
+		Knob.Position =
+			UDim2.fromScale(
+				Alpha,
+				0.5
+			)
+
+		ValueLabel.Text =
+			tostring(
+				math.floor(
+					Value
+				)
+			)
+			.. (
+				Suffix or ""
+			)
+
+		if Fire ~= false
+			and Callback
+		then
+
+			Callback(
+				Value
+			)
+		end
+	end
+
+	--------------------------------------------------------
+
+	local function UpdateFromX(
+		X
+	)
+
+		local Start =
+			Track.AbsolutePosition.X
+
+		local Width =
+			Track.AbsoluteSize.X
+
+		if Width <= 0 then
+
+			return
+		end
+
+		local Alpha =
+			math.clamp(
+
+				(
+					X - Start
+				)
+				/ Width,
+
+				0,
+
+				1
+
+			)
+
+		SetValue(
+
+			Minimum
+			+ (
+				Maximum - Minimum
+			)
+			* Alpha,
+
+			true
+
+		)
+	end
+
+	--------------------------------------------------------
+
+	Track.InputBegan:Connect(
+		function(Input)
+
+			if Input.UserInputType ==
+				Enum.UserInputType.Touch
+			then
+
+				Dragging =
+					true
+
+				ActiveTouch =
+					Input
+
+				UpdateFromX(
+					Input.Position.X
+				)
+
+				local Connection
+
+				Connection =
+					Input.Changed:Connect(
+						function()
+
+							if not Dragging then
+
+								if Connection then
+									Connection:Disconnect()
+								end
+
+								return
+							end
+
+							if Input.UserInputState ==
+								Enum.UserInputState.End
+
+								or
+
+								Input.UserInputState ==
+								Enum.UserInputState.Cancel
+							then
+
+								Dragging =
+									false
+
+								ActiveTouch =
+									nil
+
+								if Connection then
+									Connection:Disconnect()
+								end
+
+								return
+							end
+
+							UpdateFromX(
+								Input.Position.X
+							)
+
+						end
+					)
+
+			elseif Input.UserInputType ==
+				Enum.UserInputType.MouseButton1
+			then
+
+				Dragging =
+					true
+
+				UpdateFromX(
+					UIS:GetMouseLocation().X
+				)
+			end
+		end
+	)
+
+	--------------------------------------------------------
+
+	UIS.InputChanged:Connect(
+		function(Input)
+
+			if not Dragging
+				or ActiveTouch
+			then
+
+				return
+			end
+
+			if Input.UserInputType ==
+				Enum.UserInputType.MouseMovement
+			then
+
+				UpdateFromX(
+					UIS:GetMouseLocation().X
+				)
+			end
+		end
+	)
+
+	UIS.InputEnded:Connect(
+		function(Input)
+
+			if Input.UserInputType ==
+				Enum.UserInputType.MouseButton1
+			then
+
+				Dragging =
+					false
+			end
+		end
+	)
+
+	SetValue(
+		Initial,
+		false
+	)
+
+	return {
+
+		Get = function()
+
+			return Value
+		end,
+
+		Set = SetValue,
+	}
 end
 
 ------------------------------------------------------------
@@ -5243,21 +6432,24 @@ CreateSection(
 )
 
 ------------------------------------------------------------
--- ELEVATOR
+-- ELEVATOR CARD
 ------------------------------------------------------------
 
 local ElevatorCard,
+	_,
 	ElevatorDescription =
 	CreateCard(
 
 		PrincipalPage,
 
-		"Elevador V11",
+		"Elevador Estável",
 
 		"Desativado"
 
 	)
 
+------------------------------------------------------------
+-- ELEVATOR CONTROLS
 ------------------------------------------------------------
 
 local ElevatorControls =
@@ -5292,6 +6484,8 @@ ElevatorControls.Parent =
 	ElevatorCard
 
 ------------------------------------------------------------
+-- MINUS
+------------------------------------------------------------
 
 local Minus =
 	Instance.new(
@@ -5322,13 +6516,13 @@ Minus.AutoButtonColor =
 Minus.Parent =
 	ElevatorControls
 
-Bind(
+BindTheme(
 	Minus,
 	"BackgroundColor3",
 	"Control"
 )
 
-Bind(
+BindTheme(
 	Minus,
 	"TextColor3",
 	"Text"
@@ -5346,6 +6540,8 @@ Stroke(
 	0
 )
 
+------------------------------------------------------------
+-- LEVEL BOX
 ------------------------------------------------------------
 
 local LevelBox =
@@ -5371,7 +6567,7 @@ LevelBox.BorderSizePixel =
 LevelBox.Parent =
 	ElevatorControls
 
-Bind(
+BindTheme(
 	LevelBox,
 	"BackgroundColor3",
 	"Text"
@@ -5410,12 +6606,14 @@ LevelText.FontFace =
 LevelText.Parent =
 	LevelBox
 
-Bind(
+BindTheme(
 	LevelText,
 	"TextColor3",
 	"BG"
 )
 
+------------------------------------------------------------
+-- PLUS
 ------------------------------------------------------------
 
 local Plus =
@@ -5453,13 +6651,13 @@ Plus.AutoButtonColor =
 Plus.Parent =
 	ElevatorControls
 
-Bind(
+BindTheme(
 	Plus,
 	"BackgroundColor3",
 	"Accent"
 )
 
-Bind(
+BindTheme(
 	Plus,
 	"TextColor3",
 	"Text"
@@ -5471,7 +6669,7 @@ Corner(
 )
 
 ------------------------------------------------------------
--- UPDATE ELEVATOR
+-- UPDATE ELEVATOR UI
 ------------------------------------------------------------
 
 local function UpdateElevatorUI()
@@ -5487,7 +6685,6 @@ local function UpdateElevatorUI()
 			"Desativado"
 
 		return
-
 	end
 
 	local Difference =
@@ -5495,39 +6692,63 @@ local function UpdateElevatorUI()
 
 			(ElevatorTargetY or 0)
 
-			- (ElevatorY or 0)
+			- (ElevatorCurrentY or 0)
 
 		)
 
-	if Difference > 0.05 then
-
-		if ElevatorTargetY >
-			ElevatorY
-		then
-
-			ElevatorDescription.Text =
-				"Nível "
-				.. ElevatorLevel
-				.. " • subindo com limite de velocidade"
-
-		else
-
-			ElevatorDescription.Text =
-				"Nível "
-				.. ElevatorLevel
-				.. " • descendo com limite de segurança"
-
-		end
-
-	else
+	if Difference <= 0.05 then
 
 		ElevatorDescription.Text =
 			"Nível "
 			.. ElevatorLevel
 			.. " • estável"
 
-	end
+	elseif ElevatorTargetY >
+		ElevatorCurrentY
+	then
 
+		ElevatorDescription.Text =
+			"Nível "
+			.. ElevatorLevel
+			.. " • subindo"
+
+	else
+
+		local Feet =
+			GetFeetY()
+
+		local Gap =
+			0
+
+		if Feet
+			and Platform
+		then
+
+			Gap =
+				Feet
+				- (
+					ElevatorCurrentY
+					+ Platform.Size.Y / 2
+				)
+		end
+
+		if Gap >
+			CONFIG.MaximumDownGap
+		then
+
+			ElevatorDescription.Text =
+				"Nível "
+				.. ElevatorLevel
+				.. " • aguardando você"
+
+		else
+
+			ElevatorDescription.Text =
+				"Nível "
+				.. ElevatorLevel
+				.. " • descendo seguro"
+		end
+	end
 end
 
 ------------------------------------------------------------
@@ -5559,22 +6780,22 @@ Minus.MouseButton1Click:Connect(
 )
 
 ------------------------------------------------------------
--- PERIODIC ELEVATOR UI
+-- PERIODIC UI
 ------------------------------------------------------------
 
 task.spawn(
 	function()
 
-		while GUI.Parent do
+		while GUI
+			and GUI.Parent
+		do
 
 			task.wait(
-				0.18
+				0.15
 			)
 
 			UpdateElevatorUI()
-
 		end
-
 	end
 )
 
@@ -5583,6 +6804,7 @@ task.spawn(
 ------------------------------------------------------------
 
 local TPCard,
+	_,
 	TPDescription =
 	CreateCard(
 
@@ -5623,9 +6845,9 @@ TPButton.MouseButton1Click:Connect(
 
 			TPButton.TextColor3 =
 				Color3.fromRGB(
-					75,
+					70,
 					220,
-					145
+					140
 				)
 
 		else
@@ -5639,7 +6861,6 @@ TPButton.MouseButton1Click:Connect(
 					75,
 					95
 				)
-
 		end
 
 		task.delay(
@@ -5652,13 +6873,10 @@ TPButton.MouseButton1Click:Connect(
 						"ATRAVESSAR"
 
 					TPButton.TextColor3 =
-						T().Text
-
+						Theme().Text
 				end
-
 			end
 		)
-
 	end
 )
 
@@ -5676,6 +6894,7 @@ CreateSection(
 ------------------------------------------------------------
 
 local DescnyCard,
+	_,
 	DescnyDescription =
 	CreateCard(
 
@@ -5683,7 +6902,7 @@ local DescnyCard,
 
 		"DESCNY",
 
-		"Procura e ativa a capa de invisibilidade"
+		"Procura e ativa sua capa de invisibilidade"
 
 	)
 
@@ -5706,15 +6925,27 @@ DescnyButton.MouseButton1Click:Connect(
 			Message =
 			ActivateDescny()
 
-		DescnyDescription.Text =
-			Success
-			and "Usando " .. tostring(Message)
-			or tostring(Message)
+		if Success then
 
-		DescnyButton.Text =
-			Success
-			and "ATIVADO"
-			or "NÃO ACHOU"
+			DescnyDescription.Text =
+				"Usando "
+				.. tostring(
+					Message
+				)
+
+			DescnyButton.Text =
+				"ATIVADO"
+
+		else
+
+			DescnyDescription.Text =
+				tostring(
+					Message
+				)
+
+			DescnyButton.Text =
+				"NÃO ACHOU"
+		end
 
 		task.delay(
 			1.2,
@@ -5724,12 +6955,9 @@ DescnyButton.MouseButton1Click:Connect(
 
 					DescnyButton.Text =
 						"ATIVAR"
-
 				end
-
 			end
 		)
-
 	end
 )
 
@@ -5738,6 +6966,7 @@ DescnyButton.MouseButton1Click:Connect(
 ------------------------------------------------------------
 
 local AntiLagCard,
+	_,
 	AntiLagDescription =
 	CreateCard(
 
@@ -5756,7 +6985,7 @@ local AntiLagButton =
 		115
 	)
 
-local AntiNames = {
+local AntiLagNames = {
 
 	[0] = "OFF",
 
@@ -5764,7 +6993,7 @@ local AntiNames = {
 
 	[2] = "MÉDIO",
 
-	[3] = "MÁXIMO"
+	[3] = "MÁXIMO",
 }
 
 ------------------------------------------------------------
@@ -5773,13 +7002,13 @@ AntiLagButton.MouseButton1Click:Connect(
 	function()
 
 		local Next =
-			AntiLagLevel + 1
+			AntiLagLevel
+			+ 1
 
 		if Next > 3 then
 
 			Next =
 				0
-
 		end
 
 		SetAntiLag(
@@ -5787,22 +7016,21 @@ AntiLagButton.MouseButton1Click:Connect(
 		)
 
 		AntiLagButton.Text =
-			AntiNames[
+			AntiLagNames[
 				Next
 			]
 
 		AntiLagDescription.Text =
 			"Modo "
-			.. AntiNames[
+			.. AntiLagNames[
 				Next
 			]
-
 	end
 )
 
 ------------------------------------------------------------
 -- ========================================================
--- VISUAIS UI
+-- VISUALS UI
 -- ========================================================
 ------------------------------------------------------------
 
@@ -5812,18 +7040,19 @@ CreateSection(
 )
 
 ------------------------------------------------------------
--- SAFE XRAY
+-- XRAY
 ------------------------------------------------------------
 
 local XRayCard,
+	_,
 	XRayDescription =
 	CreateCard(
 
 		VisualPage,
 
-		"XRay Seguro",
+		"XRay Outline",
 
-		"Highlights locais • não altera peças do mapa"
+		"Contornos locais através das paredes"
 
 	)
 
@@ -5833,27 +7062,30 @@ local XRayToggle =
 
 		function(State)
 
+			VISUAL.XRay =
+				State
+
 			if State then
 
-				EnableSafeXRay()
-
 				XRayDescription.Text =
-					"Ativado • zero propriedades do mapa modificadas"
+					"Ativado • sem modificar as Parts"
+
+				task.spawn(
+					RefreshXRay
+				)
 
 			else
 
-				DisableSafeXRay()
-
 				XRayDescription.Text =
-					"Highlights locais • não altera peças do mapa"
+					"Contornos locais através das paredes"
 
+				ClearXRay()
 			end
-
 		end
 	)
 
 ------------------------------------------------------------
--- ESP
+-- ESP SECTION
 ------------------------------------------------------------
 
 CreateSection(
@@ -5861,6 +7093,8 @@ CreateSection(
 	"ESP Players"
 )
 
+------------------------------------------------------------
+-- LINE
 ------------------------------------------------------------
 
 local LineCard =
@@ -5870,7 +7104,7 @@ local LineCard =
 
 		"ESP Line",
 
-		"Linha até jogadores"
+		"Tracer da parte inferior da tela"
 
 	)
 
@@ -5880,12 +7114,14 @@ local LineToggle =
 
 		function(State)
 
-			ESPLine =
+			VISUAL.Line =
 				State
 
 		end
 	)
 
+------------------------------------------------------------
+-- BOX
 ------------------------------------------------------------
 
 local BoxCard =
@@ -5895,7 +7131,7 @@ local BoxCard =
 
 		"ESP Box",
 
-		"Caixa em volta do jogador"
+		"Bounding Box 2D do personagem"
 
 	)
 
@@ -5905,12 +7141,14 @@ local BoxToggle =
 
 		function(State)
 
-			ESPBox =
+			VISUAL.Box =
 				State
 
 		end
 	)
 
+------------------------------------------------------------
+-- CHAMS
 ------------------------------------------------------------
 
 local ChamsCard =
@@ -5920,7 +7158,7 @@ local ChamsCard =
 
 		"Chams",
 
-		"Highlight local através das paredes"
+		"Highlight local através de paredes"
 
 	)
 
@@ -5930,79 +7168,187 @@ local ChamsToggle =
 
 		function(State)
 
-			ESPChams =
+			VISUAL.Chams =
 				State
 
 		end
 	)
 
 ------------------------------------------------------------
--- CATEGORY
+-- NAME
 ------------------------------------------------------------
 
-local CategoryCard,
-	CategoryDescription =
+local NameCard =
 	CreateCard(
 
 		VisualPage,
 
-		"Categoria",
+		"ESP Name",
 
-		"Todos"
+		"Exibe o DisplayName"
 
 	)
 
-local CategoryButton =
-	CreateButton(
-		CategoryCard,
-		"TODOS",
-		125
-	)
+local NameToggle =
+	CreateToggle(
+		NameCard,
 
-local Categories = {
+		function(State)
 
-	"Todos",
-
-	"Aliados",
-
-	"Inimigos"
-}
-
-local CategoryIndex =
-	1
-
-------------------------------------------------------------
-
-CategoryButton.MouseButton1Click:Connect(
-	function()
-
-		CategoryIndex +=
-			1
-
-		if CategoryIndex >
-			#Categories
-		then
-
-			CategoryIndex =
-				1
+			VISUAL.Name =
+				State
 
 		end
+	)
 
-		ESPFilter =
-			Categories[
-				CategoryIndex
-			]
+------------------------------------------------------------
+-- DISTANCE
+------------------------------------------------------------
 
-		CategoryButton.Text =
-			string.upper(
-				ESPFilter
-			)
+local ESPDistanceCard =
+	CreateCard(
 
-		CategoryDescription.Text =
-			ESPFilter
+		VisualPage,
 
-	end
+		"ESP Distance",
+
+		"Exibe distância em studs"
+
+	)
+
+local ESPDistanceToggle =
+	CreateToggle(
+		ESPDistanceCard,
+
+		function(State)
+
+			VISUAL.Distance =
+				State
+
+		end
+	)
+
+------------------------------------------------------------
+-- HEALTH
+------------------------------------------------------------
+
+local HealthCard =
+	CreateCard(
+
+		VisualPage,
+
+		"ESP Health",
+
+		"Barra lateral dinâmica"
+
+	)
+
+local HealthToggle =
+	CreateToggle(
+		HealthCard,
+
+		function(State)
+
+			VISUAL.Health =
+				State
+
+		end
+	)
+
+------------------------------------------------------------
+-- TOOL
+------------------------------------------------------------
+
+local ToolCard =
+	CreateCard(
+
+		VisualPage,
+
+		"ESP Tool",
+
+		"Mostra a Tool equipada"
+
+	)
+
+local ToolToggle =
+	CreateToggle(
+		ToolCard,
+
+		function(State)
+
+			VISUAL.Tool =
+				State
+
+		end
+	)
+
+------------------------------------------------------------
+-- FILTER SECTION
+------------------------------------------------------------
+
+CreateSection(
+	VisualPage,
+	"Filtros"
 )
+
+------------------------------------------------------------
+-- VISIBILITY
+------------------------------------------------------------
+
+local VisibilityCard =
+	CreateCard(
+
+		VisualPage,
+
+		"Visibility Check",
+
+		"Verde visível • vermelho atrás da parede"
+
+	)
+
+local VisibilityToggle =
+	CreateToggle(
+		VisibilityCard,
+
+		function(State)
+
+			VISUAL.VisibilityCheck =
+				State
+
+		end
+	)
+
+VisibilityToggle.Set(
+	true,
+	false
+)
+
+------------------------------------------------------------
+-- TEAM CHECK
+------------------------------------------------------------
+
+local TeamCard =
+	CreateCard(
+
+		VisualPage,
+
+		"Team Check",
+
+		"Oculta jogadores do mesmo time"
+
+	)
+
+local TeamToggle =
+	CreateToggle(
+		TeamCard,
+
+		function(State)
+
+			VISUAL.TeamCheck =
+				State
+
+		end
+	)
 
 ------------------------------------------------------------
 -- ========================================================
@@ -6016,6 +7362,8 @@ CreateSection(
 )
 
 ------------------------------------------------------------
+-- REMOVE ELEVATOR
+------------------------------------------------------------
 
 local RemoveCard =
 	CreateCard(
@@ -6024,7 +7372,7 @@ local RemoveCard =
 
 		"Remover Elevador",
 
-		"Apaga a plataforma imediatamente"
+		"Apaga a plataforma"
 
 	)
 
@@ -6046,45 +7394,60 @@ RemoveButton.MouseButton1Click:Connect(
 )
 
 ------------------------------------------------------------
+-- DISABLE VISUALS
+------------------------------------------------------------
 
-local DisableCard =
+local DisableVisualCard =
 	CreateCard(
 
 		MiscPage,
 
 		"Desligar Visuais",
 
-		"Desativa XRay e todos ESP"
+		"Desativa todos os recursos visuais"
 
 	)
 
-local DisableButton =
+local DisableVisualButton =
 	CreateButton(
-		DisableCard,
+		DisableVisualCard,
 		"DESLIGAR",
 		115
 	)
 
-------------------------------------------------------------
-
-DisableButton.MouseButton1Click:Connect(
+DisableVisualButton.MouseButton1Click:Connect(
 	function()
 
-		ESPLine =
+		VISUAL.Box =
 			false
 
-		ESPBox =
+		VISUAL.Line =
 			false
 
-		ESPChams =
+		VISUAL.Chams =
 			false
 
-		LineToggle.Set(
+		VISUAL.Name =
+			false
+
+		VISUAL.Distance =
+			false
+
+		VISUAL.Health =
+			false
+
+		VISUAL.Tool =
+			false
+
+		VISUAL.XRay =
+			false
+
+		BoxToggle.Set(
 			false,
 			false
 		)
 
-		BoxToggle.Set(
+		LineToggle.Set(
 			false,
 			false
 		)
@@ -6094,27 +7457,61 @@ DisableButton.MouseButton1Click:Connect(
 			false
 		)
 
+		NameToggle.Set(
+			false,
+			false
+		)
+
+		ESPDistanceToggle.Set(
+			false,
+			false
+		)
+
+		HealthToggle.Set(
+			false,
+			false
+		)
+
+		ToolToggle.Set(
+			false,
+			false
+		)
+
 		XRayToggle.Set(
 			false,
 			false
 		)
 
-		DisableSafeXRay()
+		ClearXRay()
 
 		for _,
 			Data
 			in pairs(
-				ESPObjects
+				ESPCache
 			)
 		do
 
 			HideESP(
 				Data
 			)
-
 		end
-
 	end
+)
+
+------------------------------------------------------------
+-- INFO
+------------------------------------------------------------
+
+CreateCard(
+
+	MiscPage,
+
+	"Conta",
+
+	Player.DisplayName
+	.. " • @"
+	.. Player.Name
+
 )
 
 ------------------------------------------------------------
@@ -6133,6 +7530,7 @@ CreateSection(
 ------------------------------------------------------------
 
 local ThemeCard,
+	_,
 	ThemeDescription =
 	CreateCard(
 
@@ -6167,7 +7565,6 @@ ThemeButton.MouseButton1Click:Connect(
 
 			ThemeIndex =
 				1
-
 		end
 
 		local Name =
@@ -6186,181 +7583,97 @@ ThemeButton.MouseButton1Click:Connect(
 
 		ThemeDescription.Text =
 			Name
-
 	end
 )
 
 ------------------------------------------------------------
--- ESP DISTANCE
+-- MAX DISTANCE ESP
 ------------------------------------------------------------
 
-local DistanceCard,
-	DistanceDescription =
+local ESPMaxCard =
 	CreateCard(
 
 		SettingsPage,
 
-		"Distância ESP",
+		"Max Distance ESP",
 
-		"450 studs"
+		"Distância máxima de renderização"
 
 	)
 
-local DistanceButton =
-	CreateButton(
-		DistanceCard,
-		"450",
-		125
-	)
+CreateSlider(
 
-local Distances = {
+	ESPMaxCard,
 
-	150,
+	100,
 
-	300,
+	1000,
 
-	450,
+	CONFIG.ESPDistance,
 
-	700
-}
+	"",
 
-local DistanceIndex =
-	3
-
-------------------------------------------------------------
-
-DistanceButton.MouseButton1Click:Connect(
-	function()
-
-		DistanceIndex +=
-			1
-
-		if DistanceIndex >
-			#Distances
-		then
-
-			DistanceIndex =
-				1
-
-		end
+	function(Value)
 
 		CONFIG.ESPDistance =
-			Distances[
-				DistanceIndex
-			]
-
-		DistanceButton.Text =
-			tostring(
-				CONFIG.ESPDistance
+			math.floor(
+				Value
 			)
 
-		DistanceDescription.Text =
-			CONFIG.ESPDistance
-			.. " studs"
-
 	end
+
 )
 
 ------------------------------------------------------------
--- XRAY INTENSITY
+-- XRAY DISTANCE
 ------------------------------------------------------------
 
-local XRayPowerCard,
-	XRayPowerDescription =
+local XRayDistanceCard =
 	CreateCard(
 
 		SettingsPage,
 
-		"Intensidade XRay",
+		"Distância XRay",
 
-		"Outline médio"
+		"Quanto do mapa recebe outline"
 
 	)
 
-local XRayPowerButton =
-	CreateButton(
-		XRayPowerCard,
-		"MÉDIO",
-		125
-	)
+CreateSlider(
 
-local XRayModes = {
+	XRayDistanceCard,
 
-	{
-		Name = "SUAVE",
-		Fill = 0.98,
-		Outline = 0.55
-	},
+	50,
 
-	{
-		Name = "MÉDIO",
-		Fill = 0.95,
-		Outline = 0.28
-	},
+	350,
 
-	{
-		Name = "FORTE",
-		Fill = 0.88,
-		Outline = 0.08
-	}
-}
+	CONFIG.XRayDistance,
 
-local XRayModeIndex =
-	2
+	"",
 
-------------------------------------------------------------
+	function(Value)
 
-XRayPowerButton.MouseButton1Click:Connect(
-	function()
-
-		XRayModeIndex +=
-			1
-
-		if XRayModeIndex >
-			#XRayModes
-		then
-
-			XRayModeIndex =
-				1
-
-		end
-
-		local Mode =
-			XRayModes[
-				XRayModeIndex
-			]
-
-		CONFIG.XRayFillTransparency =
-			Mode.Fill
-
-		CONFIG.XRayOutlineTransparency =
-			Mode.Outline
-
-		XRayPowerButton.Text =
-			Mode.Name
-
-		XRayPowerDescription.Text =
-			"Outline "
-			.. string.lower(
-				Mode.Name
+		CONFIG.XRayDistance =
+			math.floor(
+				Value
 			)
 
-		RefreshSafeXRay()
-
 	end
+
 )
 
 ------------------------------------------------------------
--- UI SCALE
+-- INTERFACE SIZE
 ------------------------------------------------------------
 
 local ScaleCard,
+	_,
 	ScaleDescription =
 	CreateCard(
 
 		SettingsPage,
 
-		"Tamanho da Interface",
+		"Tamanho Interface",
 
 		"100%"
 
@@ -6381,7 +7694,7 @@ local ScaleValues = {
 
 	1,
 
-	1.08
+	1.08,
 }
 
 local ScaleIndex =
@@ -6401,7 +7714,6 @@ ScaleButton.MouseButton1Click:Connect(
 
 			ScaleIndex =
 				1
-
 		end
 
 		ManualScale =
@@ -6409,21 +7721,23 @@ ScaleButton.MouseButton1Click:Connect(
 				ScaleIndex
 			]
 
-		local Percent =
+		local Percentage =
 			math.floor(
+
 				ManualScale
 				* 100
+
 			)
 
 		ScaleButton.Text =
-			Percent
+			Percentage
 			.. "%"
 
 		ScaleDescription.Text =
-			Percent
+			Percentage
 			.. "%"
 
-		RefreshScale()
+		UpdateUIScale()
 
 	end
 )
@@ -6437,24 +7751,32 @@ ScaleButton.MouseButton1Click:Connect(
 local PageInfo = {
 
 	Principal = {
+
 		Icon = "⌂",
-		Text = "Principal"
+
+		Text = "Principal",
 	},
 
 	Visuais = {
+
 		Icon = "◉",
-		Text = "Visuais"
+
+		Text = "Visuais",
 	},
 
 	Diversos = {
+
 		Icon = "◇",
-		Text = "Diversos"
+
+		Text = "Diversos",
 	},
 
 	Ajustes = {
+
 		Icon = "⚙",
-		Text = "Ajustes"
-	}
+
+		Text = "Ajustes",
+	},
 }
 
 local NavigationOrder = {
@@ -6465,11 +7787,10 @@ local NavigationOrder = {
 
 	"Diversos",
 
-	"Ajustes"
+	"Ajustes",
 }
 
-local NavButtons =
-	{}
+local NavButtons = {}
 
 ------------------------------------------------------------
 -- SWITCH
@@ -6489,7 +7810,6 @@ local function SwitchPage(
 		Page.Visible =
 			PageName ==
 			Name
-
 	end
 
 	--------------------------------------------------------
@@ -6514,18 +7834,17 @@ local function SwitchPage(
 			or 1
 
 		Data.Button.BackgroundColor3 =
-			T().Card
+			Theme().Card
 
 		Data.Icon.TextColor3 =
 			Active
-			and T().Accent
-			or T().Sub
+			and Theme().Accent
+			or Theme().Sub
 
-		Data.Text.TextColor3 =
+		Data.Label.TextColor3 =
 			Active
-			and T().Text
-			or T().Sub
-
+			and Theme().Text
+			or Theme().Sub
 	end
 
 	local Info =
@@ -6540,11 +7859,10 @@ local function SwitchPage(
 		string.upper(
 			Info.Text
 		)
-
 end
 
 ------------------------------------------------------------
--- NAV BUTTONS
+-- CREATE NAV BUTTONS
 ------------------------------------------------------------
 
 for Index,
@@ -6590,7 +7908,7 @@ do
 	Button.Parent =
 		Navigation
 
-	Bind(
+	BindTheme(
 		Button,
 		"BackgroundColor3",
 		"Card"
@@ -6629,7 +7947,7 @@ do
 	Bar.Parent =
 		Button
 
-	Bind(
+	BindTheme(
 		Bar,
 		"BackgroundColor3",
 		"Accent"
@@ -6674,7 +7992,7 @@ do
 	Icon.Parent =
 		Button
 
-	Bind(
+	BindTheme(
 		Icon,
 		"TextColor3",
 		"Sub"
@@ -6682,18 +8000,18 @@ do
 
 	--------------------------------------------------------
 
-	local Text =
+	local Label =
 		Instance.new(
 			"TextLabel"
 		)
 
-	Text.Position =
+	Label.Position =
 		UDim2.fromOffset(
 			48,
 			0
 		)
 
-	Text.Size =
+	Label.Size =
 		UDim2.new(
 			1,
 			-50,
@@ -6701,26 +8019,26 @@ do
 			0
 		)
 
-	Text.BackgroundTransparency =
+	Label.BackgroundTransparency =
 		1
 
-	Text.Text =
+	Label.Text =
 		Info.Text
 
-	Text.TextSize =
+	Label.TextSize =
 		12
 
-	Text.FontFace =
+	Label.FontFace =
 		FONT_MEDIUM
 
-	Text.TextXAlignment =
+	Label.TextXAlignment =
 		Enum.TextXAlignment.Left
 
-	Text.Parent =
+	Label.Parent =
 		Button
 
-	Bind(
-		Text,
+	BindTheme(
+		Label,
 		"TextColor3",
 		"Sub"
 	)
@@ -6737,7 +8055,7 @@ do
 
 		Icon = Icon,
 
-		Text = Text
+		Label = Label,
 	}
 
 	Button.MouseButton1Click:Connect(
@@ -6749,12 +8067,11 @@ do
 
 		end
 	)
-
 end
 
 ------------------------------------------------------------
 -- ========================================================
--- MOBILE DRAG
+-- MOBILE DRAG SYSTEM
 -- ========================================================
 ------------------------------------------------------------
 
@@ -6781,10 +8098,13 @@ local function ClampPosition(
 			5,
 
 			math.max(
+
 				5,
+
 				View.X
 				- Width
 				- 5
+
 			)
 
 		)
@@ -6797,19 +8117,23 @@ local function ClampPosition(
 			5,
 
 			math.max(
+
 				5,
+
 				View.Y
 				- Height
 				- 5
+
 			)
 
 		)
 
 	return X,
 		Y
-
 end
 
+------------------------------------------------------------
+-- ROBUST TOUCH DRAG
 ------------------------------------------------------------
 
 local function MakeDraggable(
@@ -6824,14 +8148,116 @@ local function MakeDraggable(
 	local Moved =
 		false
 
-	local ActiveInput =
+	local CurrentInput =
 		nil
 
 	local StartPointer =
 		nil
 
-	local StartPosition =
+	local StartTarget =
 		nil
+
+	local MouseConnection =
+		nil
+
+	--------------------------------------------------------
+	-- UPDATE
+	--------------------------------------------------------
+
+	local function Update(
+		Pointer
+	)
+
+		if not Dragging
+			or not StartPointer
+			or not StartTarget
+		then
+
+			return
+		end
+
+		local Delta =
+			Pointer
+			- StartPointer
+
+		if Delta.Magnitude >
+			8
+		then
+
+			Moved =
+				true
+		end
+
+		if not Moved then
+
+			return
+		end
+
+		local X =
+			StartTarget.X
+			+ Delta.X
+
+		local Y =
+			StartTarget.Y
+			+ Delta.Y
+
+		X,
+			Y =
+				ClampPosition(
+
+					Target,
+
+					X,
+
+					Y
+
+				)
+
+		Target.AnchorPoint =
+			Vector2.new(
+				0,
+				0
+			)
+
+		Target.Position =
+			UDim2.fromOffset(
+				X,
+				Y
+			)
+	end
+
+	--------------------------------------------------------
+	-- FINISH
+	--------------------------------------------------------
+
+	local function Finish()
+
+		if not Dragging then
+
+			return
+		end
+
+		Dragging =
+			false
+
+		CurrentInput =
+			nil
+
+		if MouseConnection then
+
+			MouseConnection:Disconnect()
+
+			MouseConnection =
+				nil
+		end
+
+		if not Moved
+			and TapCallback
+		then
+
+			TapCallback()
+		end
+	end
 
 	--------------------------------------------------------
 	-- BEGIN
@@ -6839,6 +8265,11 @@ local function MakeDraggable(
 
 	Handle.InputBegan:Connect(
 		function(Input)
+
+			if Dragging then
+
+				return
+			end
 
 			if Input.UserInputType ~=
 				Enum.UserInputType.Touch
@@ -6850,7 +8281,6 @@ local function MakeDraggable(
 			then
 
 				return
-
 			end
 
 			Dragging =
@@ -6859,7 +8289,7 @@ local function MakeDraggable(
 			Moved =
 				false
 
-			ActiveInput =
+			CurrentInput =
 				Input
 
 			StartPointer =
@@ -6868,22 +8298,7 @@ local function MakeDraggable(
 			local Absolute =
 				Target.AbsolutePosition
 
-			Target.AnchorPoint =
-				Vector2.new(
-					0,
-					0
-				)
-
-			Target.Position =
-				UDim2.fromOffset(
-
-					Absolute.X,
-
-					Absolute.Y
-
-				)
-
-			StartPosition =
+			StartTarget =
 				Vector2.new(
 
 					Absolute.X,
@@ -6892,160 +8307,116 @@ local function MakeDraggable(
 
 				)
 
-		end
-	)
+			------------------------------------------------
+			-- TOUCH:
+			-- escuta o próprio InputObject.
+			------------------------------------------------
 
-	--------------------------------------------------------
-	-- MOVE
-	--------------------------------------------------------
-
-	UIS.InputChanged:Connect(
-		function(Input)
-
-			if not Dragging
-				or not ActiveInput
-			then
-
-				return
-
-			end
-
-			local Pointer
-
-			if ActiveInput.UserInputType ==
+			if Input.UserInputType ==
 				Enum.UserInputType.Touch
 			then
 
-				if Input ~=
-					ActiveInput
-				then
+				local TouchConnection
 
-					return
+				TouchConnection =
+					Input.Changed:Connect(
+						function()
 
-				end
+							if not Dragging
+								or CurrentInput ~= Input
+							then
 
-				Pointer =
-					Input.Position
+								if TouchConnection then
+
+									TouchConnection:Disconnect()
+
+								end
+
+								return
+							end
+
+							if Input.UserInputState ==
+								Enum.UserInputState.End
+
+								or
+
+								Input.UserInputState ==
+								Enum.UserInputState.Cancel
+							then
+
+								if TouchConnection then
+
+									TouchConnection:Disconnect()
+
+								end
+
+								Finish()
+
+								return
+							end
+
+							Update(
+								Input.Position
+							)
+						end
+					)
+
+			------------------------------------------------
+			-- MOUSE
+			------------------------------------------------
 
 			else
 
-				if Input.UserInputType ~=
-					Enum.UserInputType.MouseMovement
-				then
+				MouseConnection =
+					UIS.InputChanged:Connect(
+						function(Movement)
 
-					return
+							if not Dragging then
 
-				end
+								return
+							end
 
-				Pointer =
-					UIS:GetMouseLocation()
+							if Movement.UserInputType ==
+								Enum.UserInputType.MouseMovement
+							then
 
+								Update(
+									UIS:GetMouseLocation()
+								)
+							end
+						end
+					)
 			end
-
-			local Delta =
-				Pointer
-				- StartPointer
-
-			if Delta.Magnitude >
-				7
-			then
-
-				Moved =
-					true
-
-			end
-
-			if not Moved then
-
-				return
-
-			end
-
-			local X =
-				StartPosition.X
-				+ Delta.X
-
-			local Y =
-				StartPosition.Y
-				+ Delta.Y
-
-			X,
-				Y =
-				ClampPosition(
-
-					Target,
-
-					X,
-
-					Y
-
-				)
-
-			Target.Position =
-				UDim2.fromOffset(
-					X,
-					Y
-				)
-
 		end
 	)
 
 	--------------------------------------------------------
-	-- END
+	-- MOUSE END
 	--------------------------------------------------------
 
 	UIS.InputEnded:Connect(
 		function(Input)
 
 			if not Dragging
-				or not ActiveInput
+				or not CurrentInput
 			then
 
 				return
-
 			end
 
-			local Correct
+			if CurrentInput.UserInputType ==
+				Enum.UserInputType.MouseButton1
 
-			if ActiveInput.UserInputType ==
-				Enum.UserInputType.Touch
+				and
+
+				Input.UserInputType ==
+				Enum.UserInputType.MouseButton1
 			then
 
-				Correct =
-					Input ==
-					ActiveInput
-
-			else
-
-				Correct =
-					Input.UserInputType ==
-					Enum.UserInputType.MouseButton1
-
+				Finish()
 			end
-
-			if not Correct then
-
-				return
-
-			end
-
-			Dragging =
-				false
-
-			ActiveInput =
-				nil
-
-			if not Moved
-				and TapCallback
-			then
-
-				TapCallback()
-
-			end
-
 		end
 	)
-
 end
 
 ------------------------------------------------------------
@@ -7053,9 +8424,13 @@ end
 ------------------------------------------------------------
 
 MakeDraggable(
-	DragArea,
+
+	HeaderDrag,
+
 	Main,
+
 	nil
+
 )
 
 ------------------------------------------------------------
@@ -7066,13 +8441,24 @@ MakeDraggable(
 
 local Floating =
 	Instance.new(
-		"ImageButton"
+		"TextButton"
+	)
+
+Floating.Name =
+	"FloatingButton"
+
+Floating.AnchorPoint =
+	Vector2.new(
+		0,
+		0
 	)
 
 Floating.Position =
-	UDim2.fromOffset(
-		20,
-		170
+	UDim2.new(
+		1,
+		-82,
+		0.40,
+		0
 	)
 
 Floating.Size =
@@ -7084,11 +8470,8 @@ Floating.Size =
 Floating.BorderSizePixel =
 	0
 
-Floating.Image =
-	CONFIG.Logo
-
-Floating.ScaleType =
-	Enum.ScaleType.Fit
+Floating.Text =
+	""
 
 Floating.AutoButtonColor =
 	false
@@ -7105,7 +8488,7 @@ Floating.ZIndex =
 Floating.Parent =
 	GUI
 
-Bind(
+BindTheme(
 	Floating,
 	"BackgroundColor3",
 	"BG2"
@@ -7124,7 +8507,7 @@ Stroke(
 )
 
 ------------------------------------------------------------
--- FLOATING FALLBACK
+-- FALLBACK
 ------------------------------------------------------------
 
 local FloatingFallback =
@@ -7154,16 +8537,61 @@ FloatingFallback.Active =
 	false
 
 FloatingFallback.ZIndex =
-	499
+	501
 
 FloatingFallback.Parent =
 	Floating
 
-Bind(
+BindTheme(
 	FloatingFallback,
 	"TextColor3",
 	"Accent"
 )
+
+------------------------------------------------------------
+-- FLOATING LOGO
+------------------------------------------------------------
+
+local FloatingLogo =
+	Instance.new(
+		"ImageLabel"
+	)
+
+FloatingLogo.AnchorPoint =
+	Vector2.new(
+		0.5,
+		0.5
+	)
+
+FloatingLogo.Position =
+	UDim2.fromScale(
+		0.5,
+		0.5
+	)
+
+FloatingLogo.Size =
+	UDim2.fromOffset(
+		52,
+		52
+	)
+
+FloatingLogo.BackgroundTransparency =
+	1
+
+FloatingLogo.Image =
+	CONFIG.Logo
+
+FloatingLogo.ScaleType =
+	Enum.ScaleType.Fit
+
+FloatingLogo.Active =
+	false
+
+FloatingLogo.ZIndex =
+	502
+
+FloatingLogo.Parent =
+	Floating
 
 ------------------------------------------------------------
 -- MINIMIZE
@@ -7172,12 +8600,13 @@ Bind(
 local Minimized =
 	false
 
+------------------------------------------------------------
+
 local function MinimizeUI()
 
 	if Minimized then
 
 		return
-
 	end
 
 	Minimized =
@@ -7186,10 +8615,8 @@ local function MinimizeUI()
 	Main.Visible =
 		false
 
-	-- NÃO altera posição da bolinha
 	Floating.Visible =
 		true
-
 end
 
 ------------------------------------------------------------
@@ -7201,7 +8628,6 @@ local function RestoreUI()
 	if not Minimized then
 
 		return
-
 	end
 
 	Minimized =
@@ -7212,7 +8638,6 @@ local function RestoreUI()
 
 	Main.Visible =
 		true
-
 end
 
 ------------------------------------------------------------
@@ -7222,8 +8647,7 @@ Close.MouseButton1Click:Connect(
 )
 
 ------------------------------------------------------------
--- TAP = OPEN
--- DRAG = MOVE
+-- TAP = OPEN / DRAG = MOVE
 ------------------------------------------------------------
 
 MakeDraggable(
@@ -7237,7 +8661,9 @@ MakeDraggable(
 )
 
 ------------------------------------------------------------
+-- ========================================================
 -- RESPAWN
+-- ========================================================
 ------------------------------------------------------------
 
 Player.CharacterRemoving:Connect(
@@ -7249,12 +8675,64 @@ Player.CharacterRemoving:Connect(
 )
 
 ------------------------------------------------------------
--- START
+-- CAMERA CHANGED
+-- reparent local highlights
+------------------------------------------------------------
+
+workspace:GetPropertyChangedSignal(
+	"CurrentCamera"
+):Connect(
+	function()
+
+		if not workspace.CurrentCamera then
+
+			return
+		end
+
+		Camera =
+			workspace.CurrentCamera
+
+		for _,
+			Data
+			in pairs(
+				ESPCache
+			)
+		do
+
+			if Data.Chams then
+
+				Data.Chams.Parent =
+					Camera
+			end
+		end
+
+		for _,
+			Highlight
+			in pairs(
+				XRayObjects
+			)
+		do
+
+			if Highlight then
+
+				Highlight.Parent =
+					Camera
+			end
+		end
+	end
+)
+
+------------------------------------------------------------
+-- INITIAL THEME
 ------------------------------------------------------------
 
 ApplyTheme(
 	CurrentTheme
 )
+
+------------------------------------------------------------
+-- INITIAL PAGE
+------------------------------------------------------------
 
 SwitchPage(
 	"Principal"
